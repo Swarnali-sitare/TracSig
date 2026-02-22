@@ -1,0 +1,83 @@
+.wrapper {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  background: rgba(15, 15, 26, 0.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.logoutButton {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #e2e8f0;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.logoutButton:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.logoutButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.main {
+  padding: 2rem;
+  max-width: 48rem;
+  margin: 0 auto;
+}
+
+.greeting {
+  margin: 0 0 0.5rem;
+  font-size: 1.125rem;
+  color: #e2e8f0;
+}
+
+.role {
+  margin: 0;
+  font-size: 1rem;
+  color: #94a3b8;
+}
+
+.role strong {
+  color: #c4b5fd;
+}
+
+/* Ant Design Button styled as previous logout button */
+.logoutButton:global(.ant-btn) {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #e2e8f0;
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.5rem;
+}
+
+.logoutButton:global(.ant-btn:hover:not(:disabled)) {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #e2e8f0;
+}
+
+.logoutButton:global(.ant-btn:disabled) {
+  opacity: 0.6;
+}

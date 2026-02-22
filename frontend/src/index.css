@@ -1,0 +1,21 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Remove Ant Design default light/white input backgrounds app-wide */
+.ant-input,
+.ant-input-affix-wrapper,
+.ant-input-password,
+.ant-select .ant-select-selector,
+.ant-select-selector {
+  background: transparent !important;
+  background-color: transparent !important;
+}
