@@ -1,6 +1,10 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  /* Base UI + body text (also drives Tailwind --font-sans / --default-font-family) */
+  --font-family-sans: 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  /* Academic-style headings */
+  --font-family-serif: 'Merriweather', 'Georgia', serif;
   --font-size: 16px;
   --background: #ffffff;
   --foreground: oklch(0.145 0 0);
@@ -79,6 +83,10 @@
 }
 
 @theme inline {
+  /* Overrides Tailwind defaults; preflight uses --default-font-family ← --font-sans */
+  --font-sans: var(--font-family-sans);
+  --font-serif: var(--font-family-serif);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -131,31 +139,41 @@
 
   /* Default arrow for document; hand cursor only on explicit interactive rules below */
   html {
+    @apply font-sans;
     font-size: var(--font-size);
     cursor: default;
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
     cursor: default;
   }
 
   h1 {
+    @apply font-serif;
     font-size: var(--text-2xl);
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
   }
 
   h2 {
+    @apply font-serif;
     font-size: var(--text-xl);
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
   }
 
   h3 {
+    @apply font-serif;
     font-size: var(--text-lg);
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
+  }
+
+  /* Portals (e.g. Sonner) inherit app font stack */
+  [data-sonner-toaster],
+  [data-sonner-toast] {
+    font-family: var(--font-family-sans);
   }
 
   h4 {
