@@ -1,91 +1,46 @@
 import { Bell, CheckCircle, AlertCircle, Info } from "lucide-react";
+import { useNotifications } from "../../context/NotificationsContext";
+import type { NotificationIconKey } from "../../context/NotificationsContext";
+
+const ICON_MAP: Record<
+  NotificationIconKey,
+  typeof Bell
+> = {
+  bell: Bell,
+  alert: AlertCircle,
+  check: CheckCircle,
+  info: Info,
+};
 
 export const StudentNotifications = () => {
-  const notifications = [
-    {
-      id: 1,
-      type: "assignment",
-      title: "New Assignment Posted",
-      message: "Data Structures Project has been posted in CS201",
-      time: "5 minutes ago",
-      unread: true,
-      icon: Bell,
-      color: "#2563EB",
-      bgColor: "#EEF2FF",
-    },
-    {
-      id: 2,
-      type: "reminder",
-      title: "Assignment Due Soon",
-      message: "Web Development Assignment is due in 2 days",
-      time: "1 hour ago",
-      unread: true,
-      icon: AlertCircle,
-      color: "#F59E0B",
-      bgColor: "#FFFBEB",
-    },
-    {
-      id: 3,
-      type: "evaluation",
-      title: "Assignment Evaluated",
-      message: "Your submission for Algorithm Analysis has been evaluated",
-      time: "3 hours ago",
-      unread: false,
-      icon: CheckCircle,
-      color: "#22C55E",
-      bgColor: "#F0FDF4",
-    },
-    {
-      id: 4,
-      type: "submission",
-      title: "Submission Confirmed",
-      message: "Your submission for UI/UX Design was received successfully",
-      time: "1 day ago",
-      unread: false,
-      icon: CheckCircle,
-      color: "#22C55E",
-      bgColor: "#F0FDF4",
-    },
-    {
-      id: 5,
-      type: "system",
-      title: "System Maintenance",
-      message: "The system will undergo maintenance on Sunday, 3:00 AM - 5:00 AM",
-      time: "2 days ago",
-      unread: false,
-      icon: Info,
-      color: "#6B7280",
-      bgColor: "#F3F4F6",
-    },
-    {
-      id: 6,
-      type: "reminder",
-      title: "Deadline Approaching",
-      message: "Database Design assignment deadline is tomorrow",
-      time: "3 days ago",
-      unread: false,
-      icon: AlertCircle,
-      color: "#F59E0B",
-      bgColor: "#FFFBEB",
-    },
-  ];
-
-  const unreadCount = notifications.filter((n) => n.unread).length;
+  const { notifications, unreadCount, markAsRead, markAllAsRead } =
+    useNotifications();
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <h1 className="text-[#1F2937]">Notifications</h1>
-        {unreadCount > 0 && (
-          <span className="px-3 py-1 bg-[#2563EB] text-white rounded-full text-sm">
-            {unreadCount} unread
-          </span>
-        )}
+        <div className="flex items-center gap-3">
+          {unreadCount > 0 && (
+            <>
+              <button
+                type="button"
+                onClick={() => markAllAsRead()}
+                className="px-3 py-1.5 text-sm font-medium text-[#2563EB] border border-[#2563EB] rounded-lg hover:bg-[#EEF2FF] transition-colors"
+              >
+                Mark all as read
+              </button>
+              <span className="px-3 py-1 bg-[#2563EB] text-white rounded-full text-sm">
+                {unreadCount} unread
+              </span>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="space-y-3">
         {notifications.map((notification) => {
-          const Icon = notification.icon;
+          const Icon = ICON_MAP[notification.iconKey];
           return (
             <div
               key={notification.id}
@@ -108,9 +63,20 @@ export const StudentNotifications = () => {
                       <h3 className="text-[#1F2937]" style={{ fontWeight: 600 }}>
                         {notification.title}
                       </h3>
-                      {notification.unread && (
-                        <span className="w-2 h-2 bg-[#2563EB] rounded-full flex-shrink-0 mt-2"></span>
-                      )}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {notification.unread && (
+                          <span className="w-2 h-2 bg-[#2563EB] rounded-full mt-2"></span>
+                        )}
+                        {notification.unread && (
+                          <button
+                            type="button"
+                            onClick={() => markAsRead(notification.id)}
+                            className="text-sm font-medium text-[#2563EB] hover:underline whitespace-nowrap"
+                          >
+                            Mark as read
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <p className="text-[#6B7280] mb-2">{notification.message}</p>
                     <p className="text-sm text-[#6B7280]">{notification.time}</p>
