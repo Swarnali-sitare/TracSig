@@ -1,4 +1,4 @@
-import { Bell, Menu, User, LogOut } from "lucide-react";
+import { Bell, Menu, User, LogOut, X } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationsContext";
 import { useNavigate } from "react-router";
@@ -10,8 +10,14 @@ interface HeaderProps {
 
 export const Header = ({ onMenuClick }: HeaderProps) => {
   const { user, logout } = useAuth();
-  const { notifications, unreadCount, markAsRead, markAllAsRead } =
-    useNotifications();
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    clearNotification,
+    clearAllNotifications,
+  } = useNotifications();
   const navigate = useNavigate();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -57,59 +63,86 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
 
             {showNotifications && (
               <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-[rgba(0,0,0,0.1)] overflow-hidden">
-                <div className="p-4 border-b border-[rgba(0,0,0,0.1)] flex items-center justify-between gap-2">
+                <div className="p-4 border-b border-[rgba(0,0,0,0.1)] flex flex-wrap items-center justify-between gap-2">
                   <h3 style={{ fontWeight: 600 }}>Notifications</h3>
-                  {unreadCount > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => markAllAsRead()}
-                      className="text-xs text-[#2563EB] hover:underline shrink-0"
-                    >
-                      Mark all as read
-                    </button>
-                  )}
+                  <div className="flex flex-wrap items-center gap-2 justify-end">
+                    {unreadCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => markAllAsRead()}
+                        className="text-xs text-[#2563EB] hover:underline shrink-0"
+                      >
+                        Mark all as read
+                      </button>
+                    )}
+                    {notifications.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => clearAllNotifications()}
+                        className="text-xs text-[#DC2626] hover:underline shrink-0"
+                      >
+                        Clear all
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="max-h-96 overflow-y-auto">
-                  {notifications.map((notification) => (
-                    <div
-                      key={notification.id}
-                      className={`p-4 border-b border-[rgba(0,0,0,0.1)] hover:bg-[#F8FAFC] ${
-                        notification.unread ? "bg-[#EEF2FF]" : ""
-                      }`}
-                    >
-                      <div className="flex gap-2 justify-between items-start">
-                        <button
-                          type="button"
-                          className="flex-1 text-left min-w-0"
-                          onClick={() => {
-                            if (notification.unread) markAsRead(notification.id);
-                          }}
-                        >
-                          <p className="text-sm text-[#1F2937] font-medium">
-                            {notification.title}
-                          </p>
-                          <p className="text-sm text-[#6B7280] mt-0.5">
-                            {notification.message}
-                          </p>
-                          <p className="text-xs text-[#6B7280] mt-1">
-                            {notification.time}
-                          </p>
-                        </button>
-                        {notification.unread && (
+                  {notifications.length === 0 ? (
+                    <div className="p-8 text-center text-sm text-[#6B7280]">
+                      No notifications
+                    </div>
+                  ) : (
+                    notifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        className={`p-4 border-b border-[rgba(0,0,0,0.1)] hover:bg-[#F8FAFC] ${
+                          notification.unread ? "bg-[#EEF2FF]" : ""
+                        }`}
+                      >
+                        <div className="flex gap-2 justify-between items-start">
                           <button
                             type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              markAsRead(notification.id);
+                            className="flex-1 text-left min-w-0"
+                            onClick={() => {
+                              if (notification.unread) markAsRead(notification.id);
                             }}
-                            className="text-xs text-[#2563EB] hover:underline shrink-0 pt-0.5"
                           >
-                            Mark read
+                            <p className="text-sm text-[#1F2937] font-medium">
+                              {notification.title}
+                            </p>
+                            <p className="text-sm text-[#6B7280] mt-0.5">
+                              {notification.message}
+                            </p>
+                            <p className="text-xs text-[#6B7280] mt-1">
+                              {notification.time}
+                            </p>
                           </button>
-                        )}
+                          <div className="flex flex-col items-end gap-1 shrink-0">
+                            {notification.unread && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  markAsRead(notification.id);
+                                }}
+                                className="text-xs text-[#2563EB] hover:underline pt-0.5"
+                              >
+                                Mark read
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => clearNotification(notification.id)}
+                              className="p-1 rounded-md text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#1F2937]"
+                              aria-label={`Dismiss ${notification.title}`}
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             )}

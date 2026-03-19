@@ -9,8 +9,6 @@ import { Register } from "./components/auth/Register";
 import { StudentDashboard } from "./components/student/StudentDashboard";
 import { StudentAssignments } from "./components/student/StudentAssignments";
 import { AssignmentWork } from "./components/student/AssignmentWork";
-import { StudentNotifications } from "./components/student/StudentNotifications";
-
 // Staff Pages
 import { StaffDashboard } from "./components/staff/StaffDashboard";
 import { GiveAssignment } from "./components/staff/GiveAssignment";
@@ -45,7 +43,6 @@ export const router = createBrowserRouter([
           { path: "dashboard", Component: StudentDashboard },
           { path: "assignments", Component: StudentAssignments },
           { path: "assignments/:id", Component: AssignmentWork },
-          { path: "notifications", Component: StudentNotifications },
         ],
       },
       {

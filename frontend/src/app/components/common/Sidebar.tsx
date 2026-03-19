@@ -7,8 +7,6 @@ import {
   Users,
   UserCheck,
   TrendingUp,
-  Bell,
-  Settings,
   PlusCircle,
   ClipboardCheck,
 } from "lucide-react";
@@ -25,7 +23,6 @@ export const Sidebar = ({ isOpen }: SidebarProps) => {
   const studentMenu = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/student/dashboard" },
     { icon: FileText, label: "Assignments", path: "/student/assignments" },
-    { icon: Bell, label: "Notifications", path: "/student/notifications" },
   ];
 
   const staffMenu = [

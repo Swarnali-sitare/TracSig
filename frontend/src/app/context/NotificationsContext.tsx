@@ -95,6 +95,10 @@ interface NotificationsContextValue {
   unreadCount: number;
   markAsRead: (id: number) => void;
   markAllAsRead: () => void;
+  /** Remove one notification from the list */
+  clearNotification: (id: number) => void;
+  /** Remove all notifications from the list */
+  clearAllNotifications: () => void;
 }
 
 const NotificationsContext = createContext<NotificationsContextValue | null>(null);
@@ -114,6 +118,14 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
   }, []);
 
+  const clearNotification = useCallback((id: number) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  }, []);
+
+  const clearAllNotifications = useCallback(() => {
+    setNotifications([]);
+  }, []);
+
   const unreadCount = useMemo(
     () => notifications.filter((n) => n.unread).length,
     [notifications]
@@ -125,8 +137,17 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       unreadCount,
       markAsRead,
       markAllAsRead,
+      clearNotification,
+      clearAllNotifications,
     }),
-    [notifications, unreadCount, markAsRead, markAllAsRead]
+    [
+      notifications,
+      unreadCount,
+      markAsRead,
+      markAllAsRead,
+      clearNotification,
+      clearAllNotifications,
+    ]
   );
 
   return (
