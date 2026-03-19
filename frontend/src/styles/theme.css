@@ -124,17 +124,20 @@
     @apply border-border outline-ring/50;
   }
 
-  body {
-    @apply bg-background text-foreground;
-  }
-
   /**
   * Default typography styles for HTML elements (h1-h4, p, label, button, input).
   * These are in @layer base, so Tailwind utility classes (like text-sm, text-lg) automatically override them.
   */
 
+  /* Default arrow for document; hand cursor only on explicit interactive rules below */
   html {
     font-size: var(--font-size);
+    cursor: default;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    cursor: default;
   }
 
   h1 {
@@ -171,6 +174,89 @@
     font-size: var(--text-base);
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  /* Text entry: I-beam — not the hand cursor */
+  input:not([type]):not(:disabled),
+  input[type="text"]:not(:disabled),
+  input[type="email"]:not(:disabled),
+  input[type="password"]:not(:disabled),
+  input[type="search"]:not(:disabled),
+  input[type="tel"]:not(:disabled),
+  input[type="url"]:not(:disabled),
+  input[type="number"]:not(:disabled),
+  input[type="date"]:not(:disabled),
+  input[type="datetime-local"]:not(:disabled),
+  input[type="month"]:not(:disabled),
+  input[type="week"]:not(:disabled),
+  input[type="time"]:not(:disabled),
+  textarea:not(:disabled) {
+    cursor: text;
+  }
+
+  input:disabled,
+  textarea:disabled,
+  select:disabled {
+    cursor: not-allowed;
+  }
+
+  /* Explicit hand cursor only for known interactive patterns */
+  a[href]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+
+  summary {
+    cursor: pointer;
+  }
+
+  select:not(:disabled) {
+    cursor: pointer;
+  }
+
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  input[type="submit"]:not(:disabled),
+  input[type="button"]:not(:disabled),
+  input[type="reset"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  input[type="file"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  /* Label click targets for toggles only (not plain field labels) */
+  label:has(input[type="checkbox"]:not(:disabled)),
+  label:has(input[type="radio"]:not(:disabled)) {
+    cursor: pointer;
+  }
+
+  /**
+   * Radix / headless patterns: pointer only when role implies primary action.
+   * Excludes decorative wrappers; use native <button> where possible.
+   */
+  [role="button"]:not([aria-disabled="true"]):not([data-disabled]),
+  [role="menuitem"]:not([aria-disabled="true"]),
+  [role="menuitemcheckbox"]:not([aria-disabled="true"]),
+  [role="menuitemradio"]:not([aria-disabled="true"]),
+  [role="option"]:not([aria-disabled="true"]),
+  [role="tab"]:not([aria-disabled="true"]),
+  [role="switch"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+
+  [role="button"][aria-disabled="true"],
+  [role="tab"][aria-disabled="true"],
+  [role="option"][aria-disabled="true"] {
+    cursor: not-allowed;
   }
 
   input {
