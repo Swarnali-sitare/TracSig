@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+.venv/
+env/
+
+# Env / secrets
+.env
+.env.local
+*.pem
+
+# Build / IDE
+dist/
+build/
+*.egg-info/
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Logs / coverage
+*.log
+.coverage
+htmlcov/
+.pytest_cache/
