@@ -12,7 +12,7 @@ export const AdminDashboard = () => {
     },
     {
       icon: UserCheck,
-      label: "Total Staff",
+      label: "Total Faculty",
       value: "48",
       color: "var(--accent-hover)",
       bgColor: "color-mix(in srgb, var(--accent-hover) 16%, transparent)",
@@ -52,14 +52,14 @@ export const AdminDashboard = () => {
   ];
 
   const departmentStats = [
-    { department: "Computer Science", students: 425, staff: 15 },
-    { department: "Information Technology", students: 380, staff: 12 },
-    { department: "Electronics", students: 290, staff: 11 },
-    { department: "Mechanical", students: 150, staff: 10 },
+    { department: "Computer Science", students: 425, faculty: 15 },
+    { department: "Information Technology", students: 380, faculty: 12 },
+    { department: "Electronics", students: 290, faculty: 11 },
+    { department: "Mechanical", students: 150, faculty: 10 },
   ];
 
   const recentActivity = [
-    { id: 1, action: "New staff member added", user: "John Doe", time: "2 hours ago" },
+    { id: 1, action: "New faculty member added", user: "John Doe", time: "2 hours ago" },
     { id: 2, action: "Course updated", user: "Admin", time: "5 hours ago" },
     { id: 3, action: "Batch created", user: "Admin", time: "1 day ago" },
     { id: 4, action: "Assignment created", user: "Jane Smith", time: "2 days ago" },
@@ -143,7 +143,7 @@ export const AdminDashboard = () => {
                     Students
                   </th>
                   <th className="px-6 py-3 text-left text-foreground" style={{ fontWeight: 600 }}>
-                    Staff
+                    Faculty
                   </th>
                 </tr>
               </thead>
@@ -157,7 +157,7 @@ export const AdminDashboard = () => {
                       {dept.department}
                     </td>
                     <td className="px-6 py-3 text-muted-foreground">{dept.students}</td>
-                    <td className="px-6 py-3 text-muted-foreground">{dept.staff}</td>
+                    <td className="px-6 py-3 text-muted-foreground">{dept.faculty}</td>
                   </tr>
                 ))}
               </tbody>

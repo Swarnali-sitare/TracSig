@@ -50,7 +50,7 @@ export const GiveAssignment = () => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     setIsSubmitting(false);
     toast.success("Assignment created successfully!");
-    navigate("/staff/dashboard");
+    navigate("/faculty/dashboard");
   };
 
   const isFormValid = formData.title && formData.description && formData.course && formData.dueDate;
@@ -137,7 +137,7 @@ export const GiveAssignment = () => {
         <div className="flex items-center justify-between">
           <button
             type="button"
-            onClick={() => navigate("/staff/dashboard")}
+            onClick={() => navigate("/faculty/dashboard")}
             className="px-6 py-3 bg-muted text-foreground rounded-lg hover:bg-hover-bg transition-colors"
           >
             Cancel

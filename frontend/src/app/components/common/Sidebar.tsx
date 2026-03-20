@@ -47,17 +47,17 @@ export const Sidebar = ({ isOpen }: SidebarProps) => {
 
   const studentMenu = [{ icon: LayoutDashboard, label: "Dashboard", path: "/student/dashboard" }];
 
-  const staffMenu = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/staff/dashboard" },
-    { icon: PlusCircle, label: "Give Assignment", path: "/staff/give-assignment" },
-    { icon: TrendingUp, label: "Student Progress", path: "/staff/student-progress" },
-    { icon: ClipboardCheck, label: "Evaluate", path: "/staff/evaluate" },
+  const facultyMenu = [
+    { icon: LayoutDashboard, label: "Dashboard", path: "/faculty/dashboard" },
+    { icon: PlusCircle, label: "Give Assignment", path: "/faculty/give-assignment" },
+    { icon: TrendingUp, label: "Student Progress", path: "/faculty/student-progress" },
+    { icon: ClipboardCheck, label: "Evaluate", path: "/faculty/evaluate" },
   ];
 
   const adminMenu = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/admin/dashboard" },
     { icon: Users, label: "Students", path: "/admin/students" },
-    { icon: UserCheck, label: "Staff", path: "/admin/staff" },
+    { icon: UserCheck, label: "Faculty", path: "/admin/faculty" },
     { icon: BookOpen, label: "Courses", path: "/admin/courses" },
   ];
 
@@ -65,8 +65,8 @@ export const Sidebar = ({ isOpen }: SidebarProps) => {
     switch (user?.role) {
       case "student":
         return studentMenu;
-      case "staff":
-        return staffMenu;
+      case "faculty":
+        return facultyMenu;
       case "admin":
         return adminMenu;
       default:

@@ -2,11 +2,11 @@ import { useState } from "react";
 import { Search, UserPlus, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-export const StaffManagement = () => {
+export const FacultyManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [showAddStaff, setShowAddStaff] = useState(false);
+  const [showAddFaculty, setShowAddFaculty] = useState(false);
 
-  const staff = [
+  const facultyMembers = [
     {
       id: 1,
       name: "Dr. John Doe",
@@ -41,37 +41,37 @@ export const StaffManagement = () => {
     },
   ];
 
-  const filteredStaff = staff.filter(
-    (s) =>
-      s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.department.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredFaculty = facultyMembers.filter(
+    (m) =>
+      m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      m.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      m.department.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleDeleteStaff = (id: number) => {
-    toast.success("Staff member removed successfully");
+  const handleDeleteFaculty = (_id: number) => {
+    toast.success("Faculty member removed successfully");
   };
 
   return (
     <div className="max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-foreground">Staff Management</h1>
+        <h1 className="text-foreground">Faculty Management</h1>
         <button
-          onClick={() => setShowAddStaff(true)}
+          type="button"
+          onClick={() => setShowAddFaculty(true)}
           className="px-4 py-3 bg-primary text-white rounded-lg hover:bg-accent-hover transition-colors flex items-center gap-2"
         >
           <UserPlus className="w-4 h-4" />
-          Add Staff
+          Add Faculty
         </button>
       </div>
 
-      {/* Search */}
       <div className="bg-card rounded-lg p-6 shadow-sm border border-border mb-6">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search staff..."
+            placeholder="Search faculty..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
@@ -79,7 +79,6 @@ export const StaffManagement = () => {
         </div>
       </div>
 
-      {/* Staff Table */}
       <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -106,7 +105,7 @@ export const StaffManagement = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredStaff.map((member) => (
+              {filteredFaculty.map((member) => (
                 <tr
                   key={member.id}
                   className="border-b border-border hover:bg-muted transition-colors"
@@ -132,15 +131,17 @@ export const StaffManagement = () => {
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
                       <button
+                        type="button"
                         className="p-2 hover:bg-muted rounded-lg transition-colors"
-                        title="Edit staff"
+                        title="Edit faculty member"
                       >
                         <Edit className="w-4 h-4 text-accent-primary" />
                       </button>
                       <button
-                        onClick={() => handleDeleteStaff(member.id)}
+                        type="button"
+                        onClick={() => handleDeleteFaculty(member.id)}
                         className="p-2 hover:bg-error/10 rounded-lg transition-colors"
-                        title="Delete staff"
+                        title="Delete faculty member"
                       >
                         <Trash2 className="w-4 h-4 text-error" />
                       </button>
@@ -153,34 +154,32 @@ export const StaffManagement = () => {
         </div>
       </div>
 
-      {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
         <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
-          <p className="text-muted-foreground mb-2">Total Staff Members</p>
+          <p className="text-muted-foreground mb-2">Total Faculty Members</p>
           <p className="text-3xl text-accent-primary" style={{ fontWeight: 700 }}>
-            {staff.length}
+            {facultyMembers.length}
           </p>
         </div>
         <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
           <p className="text-muted-foreground mb-2">Average Teaching Load</p>
           <p className="text-3xl text-info" style={{ fontWeight: 700 }}>
-            {(staff.reduce((acc, s) => acc + s.teachingLoad, 0) / staff.length).toFixed(1)} hrs
+            {(facultyMembers.reduce((acc, s) => acc + s.teachingLoad, 0) / facultyMembers.length).toFixed(1)} hrs
           </p>
         </div>
         <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
           <p className="text-muted-foreground mb-2">Departments</p>
           <p className="text-3xl text-warning" style={{ fontWeight: 700 }}>
-            {new Set(staff.map((s) => s.department)).size}
+            {new Set(facultyMembers.map((s) => s.department)).size}
           </p>
         </div>
       </div>
 
-      {/* Add Staff Modal */}
-      {showAddStaff && (
+      {showAddFaculty && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-card rounded-lg max-w-md w-full">
             <div className="p-6 border-b border-border">
-              <h2 className="text-foreground">Add New Staff Member</h2>
+              <h2 className="text-foreground">Add New Faculty Member</h2>
             </div>
             <div className="p-6 space-y-4">
               <div>
@@ -188,7 +187,7 @@ export const StaffManagement = () => {
                 <input
                   type="text"
                   className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
-                  placeholder="Enter staff name"
+                  placeholder="Enter name"
                 />
               </div>
               <div>
@@ -222,19 +221,21 @@ export const StaffManagement = () => {
             </div>
             <div className="p-6 border-t border-border flex justify-end gap-3">
               <button
-                onClick={() => setShowAddStaff(false)}
+                type="button"
+                onClick={() => setShowAddFaculty(false)}
                 className="px-6 py-3 bg-muted text-foreground rounded-lg hover:bg-hover-bg transition-colors"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={() => {
-                  toast.success("Staff member added successfully");
-                  setShowAddStaff(false);
+                  toast.success("Faculty member added successfully");
+                  setShowAddFaculty(false);
                 }}
                 className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-accent-hover transition-colors"
               >
-                Add Staff
+                Add Faculty
               </button>
             </div>
           </div>

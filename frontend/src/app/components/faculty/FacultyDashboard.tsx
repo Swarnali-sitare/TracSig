@@ -2,7 +2,7 @@ import { FileText, Users, CheckCircle, TrendingUp } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { addDays, formatYmd } from "../../utils/assignmentStatus";
 
-export const StaffDashboard = () => {
+export const FacultyDashboard = () => {
   const today = new Date();
   const stats = [
     {
@@ -57,7 +57,7 @@ export const StaffDashboard = () => {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <h1 className="mb-6 text-foreground">Staff Dashboard</h1>
+      <h1 className="mb-6 text-foreground">Faculty Dashboard</h1>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

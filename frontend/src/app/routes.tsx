@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from "react-router";
+import { createBrowserRouter, Navigate, useLocation } from "react-router";
 import { RootLayout } from "./components/layouts/RootLayout";
 import { AuthLayout } from "./components/layouts/AuthLayout";
 import { DashboardLayout } from "./components/layouts/DashboardLayout";
@@ -9,17 +9,24 @@ import { Register } from "./components/auth/Register";
 import { StudentDashboard } from "./components/student/StudentDashboard";
 import { StudentAssignments } from "./components/student/StudentAssignments";
 import { AssignmentWork } from "./components/student/AssignmentWork";
-// Staff Pages
-import { StaffDashboard } from "./components/staff/StaffDashboard";
-import { GiveAssignment } from "./components/staff/GiveAssignment";
-import { StudentProgress } from "./components/staff/StudentProgress";
-import { EvaluateAssignments } from "./components/staff/EvaluateAssignments";
+// Faculty Pages
+import { FacultyDashboard } from "./components/faculty/FacultyDashboard";
+import { GiveAssignment } from "./components/faculty/GiveAssignment";
+import { StudentProgress } from "./components/faculty/StudentProgress";
+import { EvaluateAssignments } from "./components/faculty/EvaluateAssignments";
 
 // Admin Pages
 import { AdminDashboard } from "./components/admin/AdminDashboard";
 import { StudentManagement } from "./components/admin/StudentManagement";
-import { StaffManagement } from "./components/admin/StaffManagement";
+import { FacultyManagement } from "./components/admin/FacultyManagement";
 import { CourseManagement } from "./components/admin/CourseManagement";
+
+/** Old `/staff/*` URLs → `/faculty/*` */
+function RedirectStaffRoutesToFaculty() {
+  const { pathname } = useLocation();
+  const suffix = pathname.replace(/^\/staff/, "") || "/dashboard";
+  return <Navigate to={`/faculty${suffix}`} replace />;
+}
 
 export const router = createBrowserRouter([
   {
@@ -48,11 +55,15 @@ export const router = createBrowserRouter([
         ],
       },
       {
-        path: "staff",
+        path: "staff/*",
+        element: <RedirectStaffRoutesToFaculty />,
+      },
+      {
+        path: "faculty",
         Component: DashboardLayout,
         children: [
-          { index: true, Component: StaffDashboard },
-          { path: "dashboard", Component: StaffDashboard },
+          { index: true, Component: FacultyDashboard },
+          { path: "dashboard", Component: FacultyDashboard },
           { path: "give-assignment", Component: GiveAssignment },
           { path: "student-progress", Component: StudentProgress },
           { path: "evaluate", Component: EvaluateAssignments },
@@ -65,7 +76,8 @@ export const router = createBrowserRouter([
           { index: true, Component: AdminDashboard },
           { path: "dashboard", Component: AdminDashboard },
           { path: "students", Component: StudentManagement },
-          { path: "staff", Component: StaffManagement },
+          { path: "staff", element: <Navigate to="/admin/faculty" replace /> },
+          { path: "faculty", Component: FacultyManagement },
           { path: "courses", Component: CourseManagement },
         ],
       },

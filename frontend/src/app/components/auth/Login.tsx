@@ -22,9 +22,9 @@ export const Login = () => {
 
     setIsLoading(true);
     try {
-      let role: "student" | "staff" | "admin" = "student";
-      if (email.includes("staff")) {
-        role = "staff";
+      let role: "student" | "faculty" | "admin" = "student";
+      if (email.includes("faculty") || email.includes("staff")) {
+        role = "faculty";
       } else if (email.includes("admin")) {
         role = "admin";
       }
@@ -107,7 +107,7 @@ export const Login = () => {
         <p className="mb-2 text-sm font-medium text-accent-primary">Demo Login Credentials:</p>
         <ul className="space-y-1 text-xs text-muted-foreground">
           <li>Student: student@example.com</li>
-          <li>Staff: staff@example.com</li>
+          <li>Faculty: faculty@example.com (or staff@example.com)</li>
           <li>Admin: admin@example.com</li>
           <li>Password: any password</li>
         </ul>

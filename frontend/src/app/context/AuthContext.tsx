@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 
-export type UserRole = "student" | "staff" | "admin";
+/** App / URL role. Backend API uses Teacher | Student | Admin — map with `toBackendRole` in `types/apiRoles.ts` when calling `/api/auth`. */
+export type UserRole = "student" | "faculty" | "admin";
 
 export interface User {
   id: string;
@@ -28,7 +29,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Check for stored user on mount
     const storedUser = localStorage.getItem("tracsig_user");
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      const parsed = JSON.parse(storedUser) as User;
+      const raw = parsed as unknown as { role: string };
+      if (raw.role === "staff") {
+        parsed.role = "faculty";
+        localStorage.setItem("tracsig_user", JSON.stringify(parsed));
+      }
+      setUser(parsed);
     }
     setIsLoading(false);
   }, []);

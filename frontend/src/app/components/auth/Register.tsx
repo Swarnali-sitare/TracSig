@@ -111,7 +111,7 @@ export const Register = () => {
             disabled={isLoading}
           >
             <option value="student">Student</option>
-            <option value="staff">Staff</option>
+            <option value="faculty">Faculty</option>
           </select>
         </div>
 

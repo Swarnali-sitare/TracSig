@@ -1,6 +1,6 @@
 # TracSig
 
-TracSig helps students and staff keep track of assignments in one place.
+TracSig helps students and faculty keep track of assignments in one place.
 
 ---
 
@@ -115,4 +115,4 @@ This is only needed if you are **deploying** the app to a real server, not for e
 
 ## More technical details
 
-For deeper notes on authentication and the API, see [SETUP.md](./SETUP.md).
+For deeper notes on authentication and the API, see [SETUP.md](./SETUP.md). If you connect the UI to the Express auth API, use the role mapping in [`frontend/src/app/types/apiRoles.ts`](./frontend/src/app/types/apiRoles.ts) so signup/JWT roles stay **`Student` / `Teacher` / `Admin`** on the backend while the app keeps using **student / faculty / admin** in the browser.

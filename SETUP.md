@@ -87,6 +87,12 @@ npm install
 - **Backend:** Copy `backend/env.example` to `backend/.env` and set `JWT_ACCESS_SECRET` and `JWT_REFRESH_SECRET` (min 32 chars each). Other values have defaults.
 - **Frontend:** Copy `frontend/env.example` to `frontend/.env`. For local dev with Vite proxy, `VITE_API_BASE_URL=/api` is enough (default in code). For a separate API origin, set e.g. `VITE_API_BASE_URL=http://localhost:4000/api`.
 
+### Frontend vs backend roles (contract)
+
+The Express auth API validates signup `role` as **`Student`**, **`Teacher`**, or **`Admin`** (PascalCase, see `backend/src/services/authService.ts` → `VALID_ROLES`).
+
+The SPA uses lowercase **`student`**, **`faculty`**, and **`admin`** for routes and labels. **Faculty in the UI corresponds to `Teacher` in the API** — this does not change backend requirements; use `toBackendRole()` / `fromBackendRole()` in `frontend/src/app/types/apiRoles.ts` when wiring `fetch` to `/api/auth/signup` or parsing login responses so payloads and JWTs stay compatible.
+
 ## 4. Run instructions
 
 **Terminal 1 – backend**
@@ -167,4 +173,4 @@ curl -X POST http://localhost:4000/api/auth/logout \
 - **Backend structure:** Routes → controllers → services → models/utils. Auth middleware verifies JWT and attaches payload to `req.user`; role middleware can restrict by role when needed.
 - **User store:** In-memory map for demo; replace with a DB (e.g. Prisma/TypeORM) and persistent sessions in production.
 - **Validation:** Signup validated on backend (name, email, password length, role enum); frontend does client-side validation for UX.
-- **Strict TypeScript:** No `any`; shared types (User, UserRole, etc.) aligned between frontend and backend for safety and refactoring.
+- **Strict TypeScript:** No `any`; align types between frontend and backend. API `UserRole` is `Teacher` \| `Student` \| `Admin`; the SPA uses `faculty` → `Teacher` via `frontend/src/app/types/apiRoles.ts` at the HTTP boundary.

@@ -14,7 +14,7 @@ export const CourseManagement = () => {
       department: "Computer Science",
       credits: 4,
       students: 156,
-      staff: "Dr. John Doe",
+      instructor: "Dr. John Doe",
     },
     {
       id: 2,
@@ -23,7 +23,7 @@ export const CourseManagement = () => {
       department: "Computer Science",
       credits: 4,
       students: 142,
-      staff: "Dr. John Doe",
+      instructor: "Dr. John Doe",
     },
     {
       id: 3,
@@ -32,7 +32,7 @@ export const CourseManagement = () => {
       department: "Computer Science",
       credits: 3,
       students: 128,
-      staff: "Dr. Jane Smith",
+      instructor: "Dr. Jane Smith",
     },
     {
       id: 4,
@@ -41,7 +41,7 @@ export const CourseManagement = () => {
       department: "Computer Science",
       credits: 4,
       students: 98,
-      staff: "Dr. Jane Smith",
+      instructor: "Dr. Jane Smith",
     },
     {
       id: 5,
@@ -50,7 +50,7 @@ export const CourseManagement = () => {
       department: "Information Technology",
       credits: 4,
       students: 134,
-      staff: "Prof. Michael Brown",
+      instructor: "Prof. Michael Brown",
     },
   ];
 
@@ -114,7 +114,7 @@ export const CourseManagement = () => {
                   Enrolled Students
                 </th>
                 <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
-                  Instructor
+                  Faculty (Instructor)
                 </th>
                 <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
                   Actions
@@ -138,7 +138,7 @@ export const CourseManagement = () => {
                   <td className="px-6 py-4 text-muted-foreground">{course.department}</td>
                   <td className="px-6 py-4 text-muted-foreground">{course.credits}</td>
                   <td className="px-6 py-4 text-muted-foreground">{course.students}</td>
-                  <td className="px-6 py-4 text-muted-foreground">{course.staff}</td>
+                  <td className="px-6 py-4 text-muted-foreground">{course.instructor}</td>
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
                       <button
