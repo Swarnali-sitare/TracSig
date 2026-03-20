@@ -5,27 +5,54 @@ node_modules/
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyo
 .Python
-venv/
 .venv/
+venv/
 env/
 
-# Env / secrets
+# Env / secrets (use *.example templates in repo only)
 .env
 .env.local
-*.pem
+.env.*.local
 
-# Build / IDE
+# Build outputs
 dist/
 build/
 *.egg-info/
+*.egg
+
+# Flask (local DB / uploads)
+instance/
+
+# Tooling / caches
+.vite/
+*.tsbuildinfo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# IDE / editor
 .idea/
 .vscode/
 *.swp
+*.swo
+
+# OS
 .DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
 
 # Logs / coverage
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 .coverage
 htmlcov/
-.pytest_cache/
+coverage/
+
+# TLS / keys (beyond generic *.pem if needed)
+*.pem
