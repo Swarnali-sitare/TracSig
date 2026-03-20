@@ -1,7 +1,9 @@
 import { FileText, Users, CheckCircle, TrendingUp } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
+import { addDays, formatYmd } from "../../utils/assignmentStatus";
 
 export const StaffDashboard = () => {
+  const today = new Date();
   const stats = [
     {
       icon: FileText,
@@ -33,10 +35,11 @@ export const StaffDashboard = () => {
     },
   ];
 
+  /** Mirrors student logic: Completed = submitted; Pending = not due yet; Incomplete = past due, not submitted. */
   const completionData = [
     { name: "Completed", value: 124, color: "var(--success)" },
     { name: "Pending", value: 28, color: "var(--warning)" },
-    { name: "Overdue", value: 4, color: "var(--error)" },
+    { name: "Incomplete", value: 4, color: "var(--error)" },
   ];
 
   const courseProgressData = [
@@ -47,9 +50,9 @@ export const StaffDashboard = () => {
   ];
 
   const recentAssignments = [
-    { id: 1, title: "Data Structures Project", course: "CS201", students: 52, submitted: 38, dueDate: "2026-03-18" },
-    { id: 2, title: "Web Development", course: "CS301", students: 35, submitted: 28, dueDate: "2026-03-20" },
-    { id: 3, title: "Algorithm Analysis", course: "CS201", students: 52, submitted: 45, dueDate: "2026-03-10" },
+    { id: 1, title: "Data Structures Project", course: "CS201", students: 52, submitted: 38, dueDate: formatYmd(addDays(today, 7)) },
+    { id: 2, title: "Web Development", course: "CS301", students: 35, submitted: 28, dueDate: formatYmd(addDays(today, 10)) },
+    { id: 3, title: "Algorithm Analysis", course: "CS201", students: 52, submitted: 45, dueDate: formatYmd(addDays(today, -4)) },
   ];
 
   return (

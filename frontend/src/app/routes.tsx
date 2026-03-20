@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, Navigate } from "react-router";
 import { RootLayout } from "./components/layouts/RootLayout";
 import { AuthLayout } from "./components/layouts/AuthLayout";
 import { DashboardLayout } from "./components/layouts/DashboardLayout";
@@ -41,7 +41,9 @@ export const router = createBrowserRouter([
         children: [
           { index: true, Component: StudentDashboard },
           { path: "dashboard", Component: StudentDashboard },
-          { path: "assignments", Component: StudentAssignments },
+          { path: "assignments", element: <Navigate to="/student/assignments/active" replace /> },
+          { path: "assignments/active", Component: StudentAssignments },
+          { path: "assignments/closed", Component: StudentAssignments },
           { path: "assignments/:id", Component: AssignmentWork },
         ],
       },

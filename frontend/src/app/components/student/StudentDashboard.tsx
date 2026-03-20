@@ -1,33 +1,45 @@
 import { FileText, CheckCircle, Clock, AlertCircle } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
+import {
+  countAssignmentStats,
+  getMockStudentAssignments,
+} from "../../data/studentAssignmentsMock";
+import {
+  getDisplayStatusBadgeClass,
+  getStudentAssignmentDisplayStatus,
+  isDueDatePassed,
+} from "../../utils/assignmentStatus";
 
 export const StudentDashboard = () => {
+  const assignments = getMockStudentAssignments();
+  const { total, completed, pending, incomplete } = countAssignmentStats(assignments);
+
   const stats = [
     {
       icon: FileText,
       label: "Total Assignments",
-      value: "24",
+      value: String(total),
       color: "var(--accent-primary)",
       bgColor: "color-mix(in srgb, var(--accent-primary) 16%, transparent)",
     },
     {
       icon: CheckCircle,
       label: "Completed",
-      value: "18",
+      value: String(completed),
       color: "var(--success)",
       bgColor: "color-mix(in srgb, var(--success) 16%, transparent)",
     },
     {
       icon: Clock,
       label: "Pending",
-      value: "4",
+      value: String(pending),
       color: "var(--warning)",
       bgColor: "color-mix(in srgb, var(--warning) 16%, transparent)",
     },
     {
       icon: AlertCircle,
-      label: "Overdue",
-      value: "2",
+      label: "Incomplete",
+      value: String(incomplete),
       color: "var(--error)",
       bgColor: "color-mix(in srgb, var(--error) 16%, transparent)",
     },
@@ -52,35 +64,15 @@ export const StudentDashboard = () => {
     { month: "Feb", assignments: 14 },
   ];
 
-  const upcomingAssignments = [
-    {
-      id: 1,
-      title: "Data Structures Project",
-      course: "CS201",
-      dueDate: "2026-03-18",
-      status: "pending",
-    },
-    {
-      id: 2,
-      title: "Web Development Assignment",
-      course: "CS301",
-      dueDate: "2026-03-20",
-      status: "pending",
-    },
-    {
-      id: 3,
-      title: "Database Design",
-      course: "CS202",
-      dueDate: "2026-03-22",
-      status: "saved",
-    },
-  ];
+  const upcomingAssignments = [...assignments]
+    .filter((a) => !isDueDatePassed(a.dueDate))
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+    .slice(0, 3);
 
-  const recentSubmissions = [
-    { id: 1, title: "Algorithm Analysis", course: "CS201", submittedOn: "2026-03-10", status: "Evaluated" },
-    { id: 2, title: "UI/UX Design", course: "CS301", submittedOn: "2026-03-12", status: "Evaluated" },
-    { id: 3, title: "System Architecture", course: "CS401", submittedOn: "2026-03-14", status: "Pending" },
-  ];
+  const recentSubmissions = [...assignments]
+    .filter((a) => a.status === "completed")
+    .sort((a, b) => (b.submittedOn ?? b.dueDate).localeCompare(a.submittedOn ?? a.dueDate))
+    .slice(0, 3);
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -145,34 +137,41 @@ export const StudentDashboard = () => {
         {/* Upcoming Assignments */}
         <div className="rounded-lg border border-border bg-card p-6 shadow-sm transition-colors">
           <h3 className="mb-4 text-foreground">Upcoming Assignments</h3>
+          <p className="text-xs text-muted-foreground mb-3">
+            Due date not passed — Pending or Completed.
+          </p>
           <div className="space-y-3">
-            {upcomingAssignments.map((assignment) => (
-              <div
-                key={assignment.id}
-                className="cursor-pointer rounded-lg border border-border bg-muted p-4 transition-colors hover:border-primary"
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h4 className="text-foreground mb-1" style={{ fontWeight: 600 }}>
-                      {assignment.title}
-                    </h4>
-                    <p className="text-sm text-muted-foreground">{assignment.course}</p>
+            {upcomingAssignments.map((assignment) => {
+              const displayStatus = getStudentAssignmentDisplayStatus(assignment);
+              return (
+                <div
+                  key={assignment.id}
+                  className="cursor-pointer rounded-lg border border-border bg-muted p-4 transition-colors hover:border-primary"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <h4 className="text-foreground mb-1" style={{ fontWeight: 600 }}>
+                        {assignment.title}
+                      </h4>
+                      <p className="text-sm text-muted-foreground">{assignment.course}</p>
+                    </div>
+                    <span
+                      className={`px-2 py-1 rounded text-xs border shrink-0 ${getDisplayStatusBadgeClass(displayStatus)}`}
+                    >
+                      {displayStatus}
+                    </span>
                   </div>
-                  <span className={`px-2 py-1 rounded text-xs ${
-                    assignment.status === "pending" ? "bg-warning/10 text-warning" : "bg-primary/10 text-accent-primary"
-                  }`}>
-                    {assignment.status}
-                  </span>
+                  <p className="text-sm text-muted-foreground mt-2">Due: {assignment.dueDate}</p>
                 </div>
-                <p className="text-sm text-muted-foreground mt-2">Due: {assignment.dueDate}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
         {/* Recent Submissions */}
         <div className="rounded-lg border border-border bg-card p-6 shadow-sm transition-colors">
           <h3 className="mb-4 text-foreground">Recent Submissions</h3>
+          <p className="text-xs text-muted-foreground mb-3">Completed assignments (submitted).</p>
           <div className="space-y-3">
             {recentSubmissions.map((submission) => (
               <div
@@ -184,11 +183,11 @@ export const StudentDashboard = () => {
                 </h4>
                 <p className="text-sm text-muted-foreground">{submission.course}</p>
                 <div className="flex items-center justify-between mt-2">
-                  <p className="text-xs text-muted-foreground">Submitted: {submission.submittedOn}</p>
-                  <span className={`px-2 py-1 rounded text-xs ${
-                    submission.status === "Evaluated" ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
-                  }`}>
-                    {submission.status}
+                  <p className="text-xs text-muted-foreground">
+                    Submitted: {submission.submittedOn ?? submission.dueDate}
+                  </p>
+                  <span className="px-2 py-1 rounded text-xs bg-success/10 text-success border border-success/40">
+                    Completed
                   </span>
                 </div>
               </div>

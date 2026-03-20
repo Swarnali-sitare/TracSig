@@ -1,123 +1,64 @@
-import { useState } from "react";
-import { useNavigate } from "react-router";
-import { Search, Filter } from "lucide-react";
+import { useMemo, useState } from "react";
+import { useNavigate, useLocation } from "react-router";
+import { Search } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import { getMockStudentAssignments } from "../../data/studentAssignmentsMock";
+import { hasNonEmptyAssignmentDraft } from "../../utils/assignmentDraftStorage";
+import {
+  daysFromToday,
+  getDisplayStatusBadgeClass,
+  getStudentAssignmentDisplayStatus,
+  isDueDatePassed,
+} from "../../utils/assignmentStatus";
 
 export const StudentAssignments = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const list = useMemo<"active" | "closed">(() => {
+    if (location.pathname.endsWith("/closed")) return "closed";
+    return "active";
+  }, [location.pathname]);
+
+  const assignments = useMemo(() => getMockStudentAssignments(), []);
+
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-
-  const assignments = [
-    {
-      id: 1,
-      title: "Data Structures Project",
-      course: "CS201",
-      dueDate: "2026-03-18",
-      status: "pending",
-    },
-    {
-      id: 2,
-      title: "Web Development Assignment",
-      course: "CS301",
-      dueDate: "2026-03-20",
-      status: "pending",
-    },
-    {
-      id: 3,
-      title: "Database Design",
-      course: "CS202",
-      dueDate: "2026-03-22",
-      status: "saved",
-    },
-    {
-      id: 4,
-      title: "Algorithm Analysis",
-      course: "CS201",
-      dueDate: "2026-03-10",
-      status: "submitted",
-    },
-    {
-      id: 5,
-      title: "UI/UX Design",
-      course: "CS301",
-      dueDate: "2026-03-12",
-      status: "submitted",
-    },
-    {
-      id: 6,
-      title: "Machine Learning Report",
-      course: "CS401",
-      dueDate: "2026-03-08",
-      status: "overdue",
-    },
-  ];
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "pending":
-        return "bg-warning/10 text-warning border-warning/40";
-      case "saved":
-        return "bg-primary/10 text-accent-primary border-info/40";
-      case "submitted":
-        return "bg-success/10 text-success border-success/40";
-      case "overdue":
-        return "bg-error/10 text-error border-error/40";
-      default:
-        return "bg-muted text-muted-foreground border-border";
-    }
-  };
-
-  const getDaysUntilDue = (dueDate: string) => {
-    const today = new Date("2026-03-15");
-    const due = new Date(dueDate);
-    const diffTime = due.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
-  };
-
   const filteredAssignments = assignments
-    .filter((a) => statusFilter === "all" || a.status === statusFilter)
     .filter((a) =>
-      a.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.course.toLowerCase().includes(searchTerm.toLowerCase())
+      list === "active" ? !isDueDatePassed(a.dueDate) : isDueDatePassed(a.dueDate)
+    )
+    .filter(
+      (a) =>
+        a.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        a.course.toLowerCase().includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
 
+  const heading = list === "active" ? "Active assignments" : "Closed assignments";
+  const subheading =
+    list === "active"
+      ? "Due date has not passed yet — Pending or Completed work."
+      : "Due date has passed — Incomplete or Completed work.";
+
   return (
     <div className="max-w-7xl mx-auto">
-      <h1 className="mb-6 text-foreground">My Assignments</h1>
+      <h1 className="mb-1 text-foreground">{heading}</h1>
+      <p className="mb-6 text-sm text-muted-foreground">{subheading}</p>
 
-      {/* Filters */}
       <div className="bg-card rounded-lg p-6 shadow-sm border border-border mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search assignments..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
-            />
-          </div>
-          <div className="relative">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
-            >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="saved">Saved</option>
-              <option value="submitted">Submitted</option>
-              <option value="overdue">Overdue</option>
-            </select>
-          </div>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search by title or course..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
+          />
         </div>
       </div>
 
-      {/* Assignments Table */}
       <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -142,7 +83,14 @@ export const StudentAssignments = () => {
             </thead>
             <tbody>
               {filteredAssignments.map((assignment) => {
-                const daysUntilDue = getDaysUntilDue(assignment.dueDate);
+                const displayStatus = getStudentAssignmentDisplayStatus(assignment);
+                const deltaDays = daysFromToday(assignment.dueDate);
+                const isCompleted = assignment.status === "completed";
+                const hasDraft =
+                  Boolean(user) &&
+                  !isCompleted &&
+                  hasNonEmptyAssignmentDraft(user.id, assignment.id);
+
                 return (
                   <tr
                     key={assignment.id}
@@ -155,29 +103,44 @@ export const StudentAssignments = () => {
                     <td className="px-6 py-4">
                       <div>
                         <p className="text-foreground">{assignment.dueDate}</p>
-                        {daysUntilDue > 0 && assignment.status !== "submitted" && (
+                        {list === "active" && !isCompleted && deltaDays > 0 && (
                           <p className="text-xs text-muted-foreground mt-1">
-                            {daysUntilDue} {daysUntilDue === 1 ? "day" : "days"} left
+                            {deltaDays} {deltaDays === 1 ? "day" : "days"} left
                           </p>
                         )}
-                        {daysUntilDue <= 0 && assignment.status !== "submitted" && (
-                          <p className="text-xs text-error mt-1">Overdue</p>
+                        {list === "active" && !isCompleted && deltaDays === 0 && (
+                          <p className="text-xs text-warning mt-1">Due today</p>
                         )}
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm capitalize border ${getStatusColor(assignment.status)}`}
-                      >
-                        {assignment.status}
-                      </span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span
+                          className={`px-3 py-1 rounded-full text-sm border ${getDisplayStatusBadgeClass(displayStatus)}`}
+                        >
+                          {displayStatus}
+                        </span>
+                        {hasDraft && displayStatus === "Pending" && (
+                          <span
+                            className="text-xs px-2 py-0.5 rounded-md border border-primary/40 bg-primary/10 text-foreground"
+                            title="Unsubmitted work saved on this device"
+                          >
+                            Draft
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <button
-                        onClick={() => navigate(`/student/assignments/${assignment.id}`)}
+                        type="button"
+                        onClick={() =>
+                          navigate(`/student/assignments/${assignment.id}`, {
+                            state: { fromList: list },
+                          })
+                        }
                         className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-accent-hover transition-colors"
                       >
-                        {assignment.status === "submitted" ? "View" : "Work"}
+                        {isCompleted ? "View" : "Work"}
                       </button>
                     </td>
                   </tr>
