@@ -1,79 +1,118 @@
 # TracSig
 
-TracSig is an interface for students and staff to track assignments.
+TracSig helps students and staff keep track of assignments in one place.
 
-## Requirements
+---
 
-- [Node.js](https://nodejs.org/) 18+ (LTS recommended)
-- [npm](https://www.npmjs.com/) (comes with Node)
+## What you need on your computer
 
-## Quick start
+Before you start, install **Node.js** (version 18 or newer). Node.js is free software that lets this project run on your machine.
 
-Install dependencies once in each package:
+1. Go to [https://nodejs.org](https://nodejs.org) and download the **LTS** (“Long Term Support”) version for your system.
+2. Run the installer and follow the prompts. When it finishes, **npm** is included automatically—you do not need to install anything else for that.
+
+**How to check it worked:** Open a terminal (Command Prompt on Windows, or Terminal on Mac/Linux), type `node --version`, and press Enter. You should see a version number like `v20.x.x`.
+
+---
+
+## How to run TracSig (two windows)
+
+TracSig has two parts: a **backend** (the server) and a **frontend** (what you see in the browser). You run both at the same time, using **two separate terminal windows or tabs**.
+
+### Step 1 — Install the project files (do this once)
+
+Open a terminal, go to the folder where you saved this project, then run these commands one after the other:
 
 ```bash
-cd backend && npm install
-cd ../frontend && npm install
+cd backend
+npm install
 ```
 
-### Backend (API)
+```bash
+cd ../frontend
+npm install
+```
 
-1. Copy the example env file and set secrets:
+The first time, this may take a few minutes. It downloads the pieces the app needs to run. You only need to repeat this if you delete those folders or get a fresh copy of the project.
+
+---
+
+### Step 2 — Start the backend (first terminal)
+
+1. Open a terminal and go to the `backend` folder inside the project.
+2. Create a settings file by copying the example:
 
    ```bash
-   cd backend
    cp env.example .env
    ```
 
-2. Edit `backend/.env` and set **`JWT_ACCESS_SECRET`** and **`JWT_REFRESH_SECRET`** to long random strings (at least 32 characters each). Other variables have sensible defaults for local development.
+3. Open the new file named `.env` in a text editor. Find the lines for **`JWT_ACCESS_SECRET`** and **`JWT_REFRESH_SECRET`**. Replace the placeholder text with **two long random phrases** (at least 32 characters each). You can use a password manager or type random letters and numbers—they just need to be secret and hard to guess.
 
-3. Start the dev server:
+4. Save the file.
+
+5. Start the server:
 
    ```bash
    npm run dev
    ```
 
-The API listens on **http://localhost:4000** by default (`PORT` in `.env`).
+Leave this terminal **open** while you use the app. The server address is **http://localhost:4000** (that means “this computer, port 4000”). If you open [http://localhost:4000/health](http://localhost:4000/health) in a browser and see a short “ok” style message, the backend is running.
 
-- Health check: [http://localhost:4000/health](http://localhost:4000/health)
-- Auth routes are under **`/api/auth`** (see `API_BASE_PATH` in `.env`, default `/api`).
+---
 
-`CORS_ORIGIN` defaults to `http://localhost:5173` so the Vite dev app can call the API with cookies when you wire the frontend to it.
+### Step 3 — Start the website (second terminal)
 
-### Frontend (Vite + React)
+1. Open a **new** terminal (keep the first one running).
+2. Go to the `frontend` folder:
 
-In a second terminal:
+   ```bash
+   cd path/to/TracSig/frontend
+   ```
 
-```bash
-cd frontend
-npm run dev
-```
+   Replace `path/to/TracSig` with the real location of the project on your computer.
 
-Open **http://localhost:5173** in your browser.
+3. Start the site:
 
-The UI currently uses **mock authentication** (client-side) for login/register flows. Run the backend when you need the real HTTP API (e.g. testing auth with curl or after integrating the client).
+   ```bash
+   npm run dev
+   ```
 
-## Production builds
+4. The terminal will show a link, usually **http://localhost:5173**. Open that link in **Chrome, Firefox, or Edge**.
 
-**Frontend** — static assets in `frontend/dist/`:
+You should see the TracSig interface. Log in and sign-up screens may work with **demo-style behavior** on your computer (not always the full server login until the app is fully connected to the backend).
 
-```bash
-cd frontend
-npm run build
-```
+---
 
-Serve `frontend/dist` with any static host or CDN. Set any `VITE_*` variables at build time if your app uses them.
+### Quick checklist
 
-**Backend** — compile and run:
+| Step | What to do |
+|------|----------------|
+| 1 | Install Node.js (LTS) from nodejs.org |
+| 2 | Run `npm install` in `backend`, then in `frontend` |
+| 3 | Copy `backend/env.example` to `backend/.env` and fill in the two long secrets |
+| 4 | Terminal A: in `backend`, run `npm run dev` |
+| 5 | Terminal B: in `frontend`, run `npm run dev` |
+| 6 | Browser: open **http://localhost:5173** |
 
-```bash
-cd backend
-npm run build
-npm start
-```
+---
 
-Uses `node dist/index.js` and the same environment variables as development (set `NODE_ENV=production` and secure cookie settings as appropriate).
+## If something goes wrong
 
-## More detail
+- **“Command not found” for `node` or `npm`:** Node.js is not installed correctly, or the terminal was opened before you finished installing. Close the terminal, open a new one, and try again.
+- **Port already in use:** Another program is using the same port. Close other copies of this app or change the port in the backend `.env` file (ask a developer if you are unsure).
+- **Blank page or errors in the browser:** Make sure **both** terminals are still running (backend and frontend) and you used the address the frontend terminal printed (usually port **5173**).
 
-For auth flow, architecture notes, and example `curl` requests against `/api/auth`, see [SETUP.md](./SETUP.md).
+---
+
+## Optional: building for production
+
+This is only needed if you are **deploying** the app to a real server, not for everyday use on your own computer.
+
+- **Website:** In the `frontend` folder, run `npm run build`. The built files appear in the `frontend/dist` folder.
+- **Server:** In the `backend` folder, run `npm run build`, then `npm start`.
+
+---
+
+## More technical details
+
+For deeper notes on authentication and the API, see [SETUP.md](./SETUP.md).
