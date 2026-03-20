@@ -7,29 +7,29 @@ export const StudentDashboard = () => {
       icon: FileText,
       label: "Total Assignments",
       value: "24",
-      color: "#2563EB",
-      bgColor: "#EEF2FF",
+      color: "var(--accent-primary)",
+      bgColor: "color-mix(in srgb, var(--accent-primary) 16%, transparent)",
     },
     {
       icon: CheckCircle,
       label: "Completed",
       value: "18",
-      color: "#22C55E",
-      bgColor: "#F0FDF4",
+      color: "var(--success)",
+      bgColor: "color-mix(in srgb, var(--success) 16%, transparent)",
     },
     {
       icon: Clock,
       label: "Pending",
       value: "4",
-      color: "#F59E0B",
-      bgColor: "#FFFBEB",
+      color: "var(--warning)",
+      bgColor: "color-mix(in srgb, var(--warning) 16%, transparent)",
     },
     {
       icon: AlertCircle,
       label: "Overdue",
       value: "2",
-      color: "#EF4444",
-      bgColor: "#FEF2F2",
+      color: "var(--error)",
+      bgColor: "color-mix(in srgb, var(--error) 16%, transparent)",
     },
   ];
 
@@ -84,14 +84,14 @@ export const StudentDashboard = () => {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <h1 className="mb-6 text-[#1F2937]">Dashboard</h1>
+      <h1 className="mb-6 text-foreground">Dashboard</h1>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
-            <div key={stat.label} className="bg-white rounded-lg p-6 shadow-sm border border-[rgba(0,0,0,0.1)]">
+            <div key={stat.label} className="rounded-lg border border-border bg-card p-6 shadow-sm transition-colors">
               <div className="flex items-center justify-between mb-4">
                 <div
                   className="w-12 h-12 rounded-lg flex items-center justify-center"
@@ -103,7 +103,7 @@ export const StudentDashboard = () => {
               <p className="text-3xl mb-1" style={{ fontWeight: 700, color: stat.color }}>
                 {stat.value}
               </p>
-              <p className="text-[#6B7280]">{stat.label}</p>
+              <p className="text-muted-foreground">{stat.label}</p>
             </div>
           );
         })}
@@ -112,29 +112,29 @@ export const StudentDashboard = () => {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Weekly Completion */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-[rgba(0,0,0,0.1)]">
-          <h3 className="mb-4 text-[#1F2937]">Weekly Completion</h3>
+        <div className="rounded-lg border border-border bg-card p-6 shadow-sm transition-colors">
+          <h3 className="mb-4 text-foreground">Weekly Completion</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={weeklyData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-              <XAxis dataKey="day" stroke="#6B7280" />
-              <YAxis stroke="#6B7280" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+              <XAxis dataKey="day" stroke="var(--text-secondary)" />
+              <YAxis stroke="var(--text-secondary)" />
               <Tooltip />
-              <Bar dataKey="completed" fill="#2563EB" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="completed" fill="var(--accent-primary)" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         {/* Monthly Statistics */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-[rgba(0,0,0,0.1)]">
-          <h3 className="mb-4 text-[#1F2937]">Monthly Statistics</h3>
+        <div className="rounded-lg border border-border bg-card p-6 shadow-sm transition-colors">
+          <h3 className="mb-4 text-foreground">Monthly Statistics</h3>
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={monthlyData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-              <XAxis dataKey="month" stroke="#6B7280" />
-              <YAxis stroke="#6B7280" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+              <XAxis dataKey="month" stroke="var(--text-secondary)" />
+              <YAxis stroke="var(--text-secondary)" />
               <Tooltip />
-              <Line type="monotone" dataKey="assignments" stroke="#14B8A6" strokeWidth={2} />
+              <Line type="monotone" dataKey="assignments" stroke="var(--info)" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -143,50 +143,50 @@ export const StudentDashboard = () => {
       {/* Upcoming & Recent */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Upcoming Assignments */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-[rgba(0,0,0,0.1)]">
-          <h3 className="mb-4 text-[#1F2937]">Upcoming Assignments</h3>
+        <div className="rounded-lg border border-border bg-card p-6 shadow-sm transition-colors">
+          <h3 className="mb-4 text-foreground">Upcoming Assignments</h3>
           <div className="space-y-3">
             {upcomingAssignments.map((assignment) => (
               <div
                 key={assignment.id}
-                className="p-4 bg-[#F8FAFC] rounded-lg border border-[rgba(0,0,0,0.1)] hover:border-[#2563EB] transition-colors cursor-pointer"
+                className="cursor-pointer rounded-lg border border-border bg-muted p-4 transition-colors hover:border-primary"
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <h4 className="text-[#1F2937] mb-1" style={{ fontWeight: 600 }}>
+                    <h4 className="text-foreground mb-1" style={{ fontWeight: 600 }}>
                       {assignment.title}
                     </h4>
-                    <p className="text-sm text-[#6B7280]">{assignment.course}</p>
+                    <p className="text-sm text-muted-foreground">{assignment.course}</p>
                   </div>
                   <span className={`px-2 py-1 rounded text-xs ${
-                    assignment.status === "pending" ? "bg-[#FFFBEB] text-[#F59E0B]" : "bg-[#EEF2FF] text-[#2563EB]"
+                    assignment.status === "pending" ? "bg-warning/10 text-warning" : "bg-primary/10 text-accent-primary"
                   }`}>
                     {assignment.status}
                   </span>
                 </div>
-                <p className="text-sm text-[#6B7280] mt-2">Due: {assignment.dueDate}</p>
+                <p className="text-sm text-muted-foreground mt-2">Due: {assignment.dueDate}</p>
               </div>
             ))}
           </div>
         </div>
 
         {/* Recent Submissions */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-[rgba(0,0,0,0.1)]">
-          <h3 className="mb-4 text-[#1F2937]">Recent Submissions</h3>
+        <div className="rounded-lg border border-border bg-card p-6 shadow-sm transition-colors">
+          <h3 className="mb-4 text-foreground">Recent Submissions</h3>
           <div className="space-y-3">
             {recentSubmissions.map((submission) => (
               <div
                 key={submission.id}
-                className="p-4 bg-[#F8FAFC] rounded-lg border border-[rgba(0,0,0,0.1)]"
+                className="p-4 bg-muted rounded-lg border border-border"
               >
-                <h4 className="text-[#1F2937] mb-1" style={{ fontWeight: 600 }}>
+                <h4 className="text-foreground mb-1" style={{ fontWeight: 600 }}>
                   {submission.title}
                 </h4>
-                <p className="text-sm text-[#6B7280]">{submission.course}</p>
+                <p className="text-sm text-muted-foreground">{submission.course}</p>
                 <div className="flex items-center justify-between mt-2">
-                  <p className="text-xs text-[#6B7280]">Submitted: {submission.submittedOn}</p>
+                  <p className="text-xs text-muted-foreground">Submitted: {submission.submittedOn}</p>
                   <span className={`px-2 py-1 rounded text-xs ${
-                    submission.status === "Evaluated" ? "bg-[#F0FDF4] text-[#22C55E]" : "bg-[#FFFBEB] text-[#F59E0B]"
+                    submission.status === "Evaluated" ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
                   }`}>
                     {submission.status}
                   </span>

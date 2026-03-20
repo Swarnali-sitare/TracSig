@@ -32,7 +32,7 @@ export const Register = () => {
       await register(name, email, password, role);
       toast.success("Registration successful!");
       navigate(`/${role}/dashboard`);
-    } catch (error) {
+    } catch {
       toast.error("Registration failed. Please try again.");
     } finally {
       setIsLoading(false);
@@ -40,12 +40,12 @@ export const Register = () => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-8">
-      <h2 className="text-2xl mb-6 text-center text-[#1F2937]">Register</h2>
+    <div className="rounded-lg border border-border bg-card p-8 shadow-lg transition-colors">
+      <h2 className="mb-6 text-center text-2xl text-foreground">Register</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="name" className="block mb-2 text-[#1F2937]">
+          <label htmlFor="name" className="mb-2 block text-foreground">
             Full Name
           </label>
           <input
@@ -53,14 +53,14 @@ export const Register = () => {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg bg-[#F3F3F5] border border-transparent focus:border-[#2563EB] focus:outline-none transition-colors"
+            className="w-full rounded-lg border border-border bg-input-background px-4 py-3 text-foreground transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none"
             placeholder="Enter your full name"
             disabled={isLoading}
           />
         </div>
 
         <div>
-          <label htmlFor="email" className="block mb-2 text-[#1F2937]">
+          <label htmlFor="email" className="mb-2 block text-foreground">
             Email
           </label>
           <input
@@ -68,14 +68,14 @@ export const Register = () => {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg bg-[#F3F3F5] border border-transparent focus:border-[#2563EB] focus:outline-none transition-colors"
+            className="w-full rounded-lg border border-border bg-input-background px-4 py-3 text-foreground transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none"
             placeholder="Enter your email"
             disabled={isLoading}
           />
         </div>
 
         <div>
-          <label htmlFor="password" className="block mb-2 text-[#1F2937]">
+          <label htmlFor="password" className="mb-2 block text-foreground">
             Password
           </label>
           <div className="relative">
@@ -84,30 +84,30 @@ export const Register = () => {
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg bg-[#F3F3F5] border border-transparent focus:border-[#2563EB] focus:outline-none transition-colors pr-12"
+              className="w-full rounded-lg border border-border bg-input-background px-4 py-3 pr-12 text-foreground transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none"
               placeholder="Enter your password"
               disabled={isLoading}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6B7280] hover:text-[#1F2937]"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
-              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
             </button>
           </div>
         </div>
 
         <div>
-          <label htmlFor="role" className="block mb-2 text-[#1F2937]">
+          <label htmlFor="role" className="mb-2 block text-foreground">
             Role
           </label>
           <select
             id="role"
             value={role}
             onChange={(e) => setRole(e.target.value as UserRole)}
-            className="w-full px-4 py-3 rounded-lg bg-[#F3F3F5] border border-transparent focus:border-[#2563EB] focus:outline-none transition-colors"
+            className="w-full rounded-lg border border-border bg-input-background px-4 py-3 text-foreground transition-colors focus:border-primary focus:outline-none"
             disabled={isLoading}
           >
             <option value="student">Student</option>
@@ -118,17 +118,17 @@ export const Register = () => {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full py-3 bg-[#2563EB] text-white rounded-lg hover:bg-[#1D4ED8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3 text-primary-foreground transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+          {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
           {isLoading ? "Registering..." : "Register"}
         </button>
       </form>
 
       <div className="mt-6 text-center">
-        <p className="text-[#6B7280]">
+        <p className="text-muted-foreground">
           Already have an account?{" "}
-          <Link to="/auth/login" className="text-[#2563EB] hover:underline">
+          <Link to="/auth/login" className="text-accent-primary hover:underline">
             Login
           </Link>
         </p>

@@ -7,36 +7,36 @@ export const StaffDashboard = () => {
       icon: FileText,
       label: "Assignments Created",
       value: "32",
-      color: "#2563EB",
-      bgColor: "#EEF2FF",
+      color: "var(--accent-primary)",
+      bgColor: "color-mix(in srgb, var(--accent-primary) 16%, transparent)",
     },
     {
       icon: Users,
       label: "Total Students",
       value: "156",
-      color: "#4F46E5",
-      bgColor: "#EEF2FF",
+      color: "var(--accent-hover)",
+      bgColor: "color-mix(in srgb, var(--accent-hover) 16%, transparent)",
     },
     {
       icon: CheckCircle,
       label: "Submissions",
       value: "124",
-      color: "#22C55E",
-      bgColor: "#F0FDF4",
+      color: "var(--success)",
+      bgColor: "color-mix(in srgb, var(--success) 16%, transparent)",
     },
     {
       icon: TrendingUp,
       label: "Completion Rate",
       value: "79%",
-      color: "#14B8A6",
-      bgColor: "#F0FDFA",
+      color: "var(--info)",
+      bgColor: "color-mix(in srgb, var(--info) 16%, transparent)",
     },
   ];
 
   const completionData = [
-    { name: "Completed", value: 124, color: "#22C55E" },
-    { name: "Pending", value: 28, color: "#F59E0B" },
-    { name: "Overdue", value: 4, color: "#EF4444" },
+    { name: "Completed", value: 124, color: "var(--success)" },
+    { name: "Pending", value: 28, color: "var(--warning)" },
+    { name: "Overdue", value: 4, color: "var(--error)" },
   ];
 
   const courseProgressData = [
@@ -54,14 +54,14 @@ export const StaffDashboard = () => {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <h1 className="mb-6 text-[#1F2937]">Staff Dashboard</h1>
+      <h1 className="mb-6 text-foreground">Staff Dashboard</h1>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
-            <div key={stat.label} className="bg-white rounded-lg p-6 shadow-sm border border-[rgba(0,0,0,0.1)]">
+            <div key={stat.label} className="bg-card rounded-lg p-6 shadow-sm border border-border">
               <div className="flex items-center justify-between mb-4">
                 <div
                   className="w-12 h-12 rounded-lg flex items-center justify-center"
@@ -73,7 +73,7 @@ export const StaffDashboard = () => {
               <p className="text-3xl mb-1" style={{ fontWeight: 700, color: stat.color }}>
                 {stat.value}
               </p>
-              <p className="text-[#6B7280]">{stat.label}</p>
+              <p className="text-muted-foreground">{stat.label}</p>
             </div>
           );
         })}
@@ -82,8 +82,8 @@ export const StaffDashboard = () => {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Submission Status */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-[rgba(0,0,0,0.1)]">
-          <h3 className="mb-4 text-[#1F2937]">Submission Status</h3>
+        <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
+          <h3 className="mb-4 text-foreground">Submission Status</h3>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie
@@ -93,7 +93,7 @@ export const StaffDashboard = () => {
                 labelLine={false}
                 label={({ name, value }) => `${name}: ${value}`}
                 outerRadius={80}
-                fill="#8884d8"
+                fill="var(--muted-foreground)"
                 dataKey="value"
               >
                 {completionData.map((entry, index) => (
@@ -106,47 +106,47 @@ export const StaffDashboard = () => {
         </div>
 
         {/* Course Progress */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-[rgba(0,0,0,0.1)]">
-          <h3 className="mb-4 text-[#1F2937]">Course Progress</h3>
+        <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
+          <h3 className="mb-4 text-foreground">Course Progress</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={courseProgressData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-              <XAxis dataKey="course" stroke="#6B7280" />
-              <YAxis stroke="#6B7280" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+              <XAxis dataKey="course" stroke="var(--text-secondary)" />
+              <YAxis stroke="var(--text-secondary)" />
               <Tooltip />
               <Legend />
-              <Bar dataKey="submissions" fill="#2563EB" name="Submissions" radius={[8, 8, 0, 0]} />
-              <Bar dataKey="total" fill="#E5E7EB" name="Total Students" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="submissions" fill="var(--accent-primary)" name="Submissions" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="total" fill="var(--border-color)" name="Total Students" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
 
       {/* Recent Assignments */}
-      <div className="bg-white rounded-lg shadow-sm border border-[rgba(0,0,0,0.1)] overflow-hidden">
-        <div className="p-6 border-b border-[rgba(0,0,0,0.1)]">
-          <h3 className="text-[#1F2937]">Recent Assignments</h3>
+      <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
+        <div className="p-6 border-b border-border">
+          <h3 className="text-foreground">Recent Assignments</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-[#F8FAFC] border-b border-[rgba(0,0,0,0.1)]">
+            <thead className="bg-muted border-b border-border">
               <tr>
-                <th className="px-6 py-4 text-left text-[#1F2937]" style={{ fontWeight: 600 }}>
+                <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
                   Assignment Title
                 </th>
-                <th className="px-6 py-4 text-left text-[#1F2937]" style={{ fontWeight: 600 }}>
+                <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
                   Course
                 </th>
-                <th className="px-6 py-4 text-left text-[#1F2937]" style={{ fontWeight: 600 }}>
+                <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
                   Students
                 </th>
-                <th className="px-6 py-4 text-left text-[#1F2937]" style={{ fontWeight: 600 }}>
+                <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
                   Submissions
                 </th>
-                <th className="px-6 py-4 text-left text-[#1F2937]" style={{ fontWeight: 600 }}>
+                <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
                   Due Date
                 </th>
-                <th className="px-6 py-4 text-left text-[#1F2937]" style={{ fontWeight: 600 }}>
+                <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
                   Progress
                 </th>
               </tr>
@@ -157,24 +157,24 @@ export const StaffDashboard = () => {
                 return (
                   <tr
                     key={assignment.id}
-                    className="border-b border-[rgba(0,0,0,0.1)] hover:bg-[#F8FAFC] transition-colors"
+                    className="border-b border-border hover:bg-muted transition-colors"
                   >
-                    <td className="px-6 py-4 text-[#1F2937]" style={{ fontWeight: 600 }}>
+                    <td className="px-6 py-4 text-foreground" style={{ fontWeight: 600 }}>
                       {assignment.title}
                     </td>
-                    <td className="px-6 py-4 text-[#6B7280]">{assignment.course}</td>
-                    <td className="px-6 py-4 text-[#6B7280]">{assignment.students}</td>
-                    <td className="px-6 py-4 text-[#6B7280]">{assignment.submitted}</td>
-                    <td className="px-6 py-4 text-[#6B7280]">{assignment.dueDate}</td>
+                    <td className="px-6 py-4 text-muted-foreground">{assignment.course}</td>
+                    <td className="px-6 py-4 text-muted-foreground">{assignment.students}</td>
+                    <td className="px-6 py-4 text-muted-foreground">{assignment.submitted}</td>
+                    <td className="px-6 py-4 text-muted-foreground">{assignment.dueDate}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 h-2 bg-[#E5E7EB] rounded-full overflow-hidden">
+                        <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
                           <div
-                            className="h-full bg-[#22C55E]"
+                            className="h-full bg-success"
                             style={{ width: `${progress}%` }}
                           ></div>
                         </div>
-                        <span className="text-sm text-[#6B7280]">{progress}%</span>
+                        <span className="text-sm text-muted-foreground">{progress}%</span>
                       </div>
                     </td>
                   </tr>

@@ -22,7 +22,6 @@ export const Login = () => {
 
     setIsLoading(true);
     try {
-      // Determine role based on email for demo purposes
       let role: "student" | "staff" | "admin" = "student";
       if (email.includes("staff")) {
         role = "staff";
@@ -33,7 +32,7 @@ export const Login = () => {
       await login(email, password, role);
       toast.success("Login successful!");
       navigate(`/${role}/dashboard`);
-    } catch (error) {
+    } catch {
       toast.error("Login failed. Please try again.");
     } finally {
       setIsLoading(false);
@@ -41,12 +40,12 @@ export const Login = () => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-8">
-      <h2 className="text-2xl mb-6 text-center text-[#1F2937]">Login</h2>
+    <div className="rounded-lg border border-border bg-card p-8 shadow-lg transition-colors">
+      <h2 className="mb-6 text-center text-2xl text-foreground">Login</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="email" className="block mb-2 text-[#1F2937]">
+          <label htmlFor="email" className="mb-2 block text-foreground">
             Email
           </label>
           <input
@@ -54,14 +53,14 @@ export const Login = () => {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg bg-[#F3F3F5] border border-transparent focus:border-[#2563EB] focus:outline-none transition-colors"
+            className="w-full rounded-lg border border-border bg-input-background px-4 py-3 text-foreground transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none"
             placeholder="Enter your email"
             disabled={isLoading}
           />
         </div>
 
         <div>
-          <label htmlFor="password" className="block mb-2 text-[#1F2937]">
+          <label htmlFor="password" className="mb-2 block text-foreground">
             Password
           </label>
           <div className="relative">
@@ -70,17 +69,17 @@ export const Login = () => {
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg bg-[#F3F3F5] border border-transparent focus:border-[#2563EB] focus:outline-none transition-colors pr-12"
+              className="w-full rounded-lg border border-border bg-input-background px-4 py-3 pr-12 text-foreground transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none"
               placeholder="Enter your password"
               disabled={isLoading}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6B7280] hover:text-[#1F2937]"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
-              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
             </button>
           </div>
         </div>
@@ -88,25 +87,25 @@ export const Login = () => {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full py-3 bg-[#2563EB] text-white rounded-lg hover:bg-[#1D4ED8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3 text-primary-foreground transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+          {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
           {isLoading ? "Logging in..." : "Login"}
         </button>
       </form>
 
       <div className="mt-6 text-center">
-        <p className="text-[#6B7280]">
-          Don't have an account?{" "}
-          <Link to="/auth/register" className="text-[#2563EB] hover:underline">
+        <p className="text-muted-foreground">
+          Don&apos;t have an account?{" "}
+          <Link to="/auth/register" className="text-accent-primary hover:underline">
             Register
           </Link>
         </p>
       </div>
 
-      <div className="mt-8 p-4 bg-[#EEF2FF] rounded-lg">
-        <p className="text-sm text-[#4F46E5] mb-2">Demo Login Credentials:</p>
-        <ul className="text-xs text-[#6B7280] space-y-1">
+      <div className="mt-8 rounded-lg border border-border bg-muted p-4">
+        <p className="mb-2 text-sm font-medium text-accent-primary">Demo Login Credentials:</p>
+        <ul className="space-y-1 text-xs text-muted-foreground">
           <li>Student: student@example.com</li>
           <li>Staff: staff@example.com</li>
           <li>Admin: admin@example.com</li>

@@ -56,7 +56,7 @@ export const Sidebar = ({ isOpen }: SidebarProps) => {
 
   return (
     <aside
-      className={`fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white border-r border-[rgba(0,0,0,0.1)] transition-all duration-300 z-40 ${
+      className={`fixed left-0 top-16 z-40 h-[calc(100vh-4rem)] border-r border-border bg-card transition-all duration-300 ${
         isOpen ? "w-64 translate-x-0" : "w-64 -translate-x-full"
       }`}
     >
@@ -70,10 +70,10 @@ export const Sidebar = ({ isOpen }: SidebarProps) => {
               <li key={item.path}>
                 <button
                   onClick={() => navigate(item.path)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                  className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 transition-colors ${
                     isActive
-                      ? "bg-[#2563EB] text-white"
-                      : "text-[#1F2937] hover:bg-[#F3F4F6]"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-foreground hover:bg-hover-bg"
                   }`}
                 >
                   <Icon className="w-5 h-5" />

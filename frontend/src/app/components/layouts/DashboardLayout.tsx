@@ -16,7 +16,7 @@ export const DashboardLayout = () => {
 
   return (
     <NotificationsProvider>
-      <div className="min-h-screen bg-[#F8FAFC]">
+      <div className="min-h-screen bg-background transition-colors">
         <Header onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
         <div className="flex">
           <Sidebar isOpen={isSidebarOpen} />

@@ -30,8 +30,8 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
     time: "5 minutes ago",
     unread: true,
     iconKey: "bell",
-    color: "#2563EB",
-    bgColor: "#EEF2FF",
+    color: "var(--accent-primary)",
+    bgColor: "color-mix(in srgb, var(--accent-primary) 16%, transparent)",
   },
   {
     id: 2,
@@ -41,8 +41,8 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
     time: "1 hour ago",
     unread: true,
     iconKey: "alert",
-    color: "#F59E0B",
-    bgColor: "#FFFBEB",
+    color: "var(--warning)",
+    bgColor: "color-mix(in srgb, var(--warning) 18%, transparent)",
   },
   {
     id: 3,
@@ -52,8 +52,8 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
     time: "3 hours ago",
     unread: false,
     iconKey: "check",
-    color: "#22C55E",
-    bgColor: "#F0FDF4",
+    color: "var(--success)",
+    bgColor: "color-mix(in srgb, var(--success) 16%, transparent)",
   },
   {
     id: 4,
@@ -63,8 +63,8 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
     time: "1 day ago",
     unread: false,
     iconKey: "check",
-    color: "#22C55E",
-    bgColor: "#F0FDF4",
+    color: "var(--success)",
+    bgColor: "color-mix(in srgb, var(--success) 16%, transparent)",
   },
   {
     id: 5,
@@ -74,8 +74,8 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
     time: "2 days ago",
     unread: false,
     iconKey: "info",
-    color: "#6B7280",
-    bgColor: "#F3F4F6",
+    color: "var(--text-secondary)",
+    bgColor: "color-mix(in srgb, var(--text-secondary) 12%, transparent)",
   },
   {
     id: 6,
@@ -85,8 +85,8 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
     time: "3 days ago",
     unread: false,
     iconKey: "alert",
-    color: "#F59E0B",
-    bgColor: "#FFFBEB",
+    color: "var(--warning)",
+    bgColor: "color-mix(in srgb, var(--warning) 18%, transparent)",
   },
 ];
 

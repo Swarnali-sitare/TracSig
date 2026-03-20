@@ -7,29 +7,29 @@ export const AdminDashboard = () => {
       icon: Users,
       label: "Total Students",
       value: "1,245",
-      color: "#2563EB",
-      bgColor: "#EEF2FF",
+      color: "var(--accent-primary)",
+      bgColor: "color-mix(in srgb, var(--accent-primary) 16%, transparent)",
     },
     {
       icon: UserCheck,
       label: "Total Staff",
       value: "48",
-      color: "#4F46E5",
-      bgColor: "#EEF2FF",
+      color: "var(--accent-hover)",
+      bgColor: "color-mix(in srgb, var(--accent-hover) 16%, transparent)",
     },
     {
       icon: FileText,
       label: "Total Assignments",
       value: "324",
-      color: "#14B8A6",
-      bgColor: "#F0FDFA",
+      color: "var(--info)",
+      bgColor: "color-mix(in srgb, var(--info) 16%, transparent)",
     },
     {
       icon: BookOpen,
       label: "Active Courses",
       value: "28",
-      color: "#F59E0B",
-      bgColor: "#FFFBEB",
+      color: "var(--warning)",
+      bgColor: "color-mix(in srgb, var(--warning) 16%, transparent)",
     },
   ];
 
@@ -67,14 +67,14 @@ export const AdminDashboard = () => {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <h1 className="mb-6 text-[#1F2937]">Admin Dashboard</h1>
+      <h1 className="mb-6 text-foreground">Admin Dashboard</h1>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
-            <div key={stat.label} className="bg-white rounded-lg p-6 shadow-sm border border-[rgba(0,0,0,0.1)]">
+            <div key={stat.label} className="bg-card rounded-lg p-6 shadow-sm border border-border">
               <div className="flex items-center justify-between mb-4">
                 <div
                   className="w-12 h-12 rounded-lg flex items-center justify-center"
@@ -86,7 +86,7 @@ export const AdminDashboard = () => {
               <p className="text-3xl mb-1" style={{ fontWeight: 700, color: stat.color }}>
                 {stat.value}
               </p>
-              <p className="text-[#6B7280]">{stat.label}</p>
+              <p className="text-muted-foreground">{stat.label}</p>
             </div>
           );
         })}
@@ -95,31 +95,31 @@ export const AdminDashboard = () => {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Monthly Assignments */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-[rgba(0,0,0,0.1)]">
-          <h3 className="mb-4 text-[#1F2937]">Monthly Assignments</h3>
+        <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
+          <h3 className="mb-4 text-foreground">Monthly Assignments</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={monthlyAssignments}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-              <XAxis dataKey="month" stroke="#6B7280" />
-              <YAxis stroke="#6B7280" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+              <XAxis dataKey="month" stroke="var(--text-secondary)" />
+              <YAxis stroke="var(--text-secondary)" />
               <Tooltip />
-              <Bar dataKey="assignments" fill="#2563EB" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="assignments" fill="var(--accent-primary)" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         {/* Completion Trends */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-[rgba(0,0,0,0.1)]">
-          <h3 className="mb-4 text-[#1F2937]">Completion Percentage Trends</h3>
+        <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
+          <h3 className="mb-4 text-foreground">Completion Percentage Trends</h3>
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={completionTrends}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-              <XAxis dataKey="month" stroke="#6B7280" />
-              <YAxis stroke="#6B7280" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+              <XAxis dataKey="month" stroke="var(--text-secondary)" />
+              <YAxis stroke="var(--text-secondary)" />
               <Tooltip />
               <Legend />
-              <Line type="monotone" dataKey="completed" stroke="#22C55E" strokeWidth={2} name="Completed %" />
-              <Line type="monotone" dataKey="pending" stroke="#F59E0B" strokeWidth={2} name="Pending %" />
+              <Line type="monotone" dataKey="completed" stroke="var(--success)" strokeWidth={2} name="Completed %" />
+              <Line type="monotone" dataKey="pending" stroke="var(--warning)" strokeWidth={2} name="Pending %" />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -128,21 +128,21 @@ export const AdminDashboard = () => {
       {/* Department Stats & Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Department Statistics */}
-        <div className="bg-white rounded-lg shadow-sm border border-[rgba(0,0,0,0.1)] overflow-hidden">
-          <div className="p-6 border-b border-[rgba(0,0,0,0.1)]">
-            <h3 className="text-[#1F2937]">Department Statistics</h3>
+        <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
+          <div className="p-6 border-b border-border">
+            <h3 className="text-foreground">Department Statistics</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-[#F8FAFC] border-b border-[rgba(0,0,0,0.1)]">
+              <thead className="bg-muted border-b border-border">
                 <tr>
-                  <th className="px-6 py-3 text-left text-[#1F2937]" style={{ fontWeight: 600 }}>
+                  <th className="px-6 py-3 text-left text-foreground" style={{ fontWeight: 600 }}>
                     Department
                   </th>
-                  <th className="px-6 py-3 text-left text-[#1F2937]" style={{ fontWeight: 600 }}>
+                  <th className="px-6 py-3 text-left text-foreground" style={{ fontWeight: 600 }}>
                     Students
                   </th>
-                  <th className="px-6 py-3 text-left text-[#1F2937]" style={{ fontWeight: 600 }}>
+                  <th className="px-6 py-3 text-left text-foreground" style={{ fontWeight: 600 }}>
                     Staff
                   </th>
                 </tr>
@@ -151,13 +151,13 @@ export const AdminDashboard = () => {
                 {departmentStats.map((dept, index) => (
                   <tr
                     key={index}
-                    className="border-b border-[rgba(0,0,0,0.1)] hover:bg-[#F8FAFC] transition-colors"
+                    className="border-b border-border hover:bg-muted transition-colors"
                   >
-                    <td className="px-6 py-3 text-[#1F2937]" style={{ fontWeight: 600 }}>
+                    <td className="px-6 py-3 text-foreground" style={{ fontWeight: 600 }}>
                       {dept.department}
                     </td>
-                    <td className="px-6 py-3 text-[#6B7280]">{dept.students}</td>
-                    <td className="px-6 py-3 text-[#6B7280]">{dept.staff}</td>
+                    <td className="px-6 py-3 text-muted-foreground">{dept.students}</td>
+                    <td className="px-6 py-3 text-muted-foreground">{dept.staff}</td>
                   </tr>
                 ))}
               </tbody>
@@ -166,21 +166,21 @@ export const AdminDashboard = () => {
         </div>
 
         {/* Recent Activity */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-[rgba(0,0,0,0.1)]">
-          <h3 className="mb-4 text-[#1F2937]">Recent Activity</h3>
+        <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
+          <h3 className="mb-4 text-foreground">Recent Activity</h3>
           <div className="space-y-4">
             {recentActivity.map((activity) => (
               <div
                 key={activity.id}
-                className="flex items-start gap-3 p-4 bg-[#F8FAFC] rounded-lg"
+                className="flex items-start gap-3 p-4 bg-muted rounded-lg"
               >
-                <div className="w-2 h-2 bg-[#2563EB] rounded-full mt-2 flex-shrink-0"></div>
+                <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
                 <div className="flex-1">
-                  <p className="text-[#1F2937]" style={{ fontWeight: 600 }}>
+                  <p className="text-foreground" style={{ fontWeight: 600 }}>
                     {activity.action}
                   </p>
-                  <p className="text-sm text-[#6B7280]">by {activity.user}</p>
-                  <p className="text-xs text-[#6B7280] mt-1">{activity.time}</p>
+                  <p className="text-sm text-muted-foreground">by {activity.user}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{activity.time}</p>
                 </div>
               </div>
             ))}

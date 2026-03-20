@@ -70,32 +70,32 @@ export const StudentProgress = () => {
     .filter((s) => s.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
   const getCompletionColor = (rate: number) => {
-    if (rate >= 80) return "text-[#22C55E]";
-    if (rate >= 60) return "text-[#F59E0B]";
-    return "text-[#EF4444]";
+    if (rate >= 80) return "text-success";
+    if (rate >= 60) return "text-warning";
+    return "text-error";
   };
 
   return (
     <div className="max-w-7xl mx-auto">
-      <h1 className="mb-6 text-[#1F2937]">Student Progress</h1>
+      <h1 className="mb-6 text-foreground">Student Progress</h1>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg p-6 shadow-sm border border-[rgba(0,0,0,0.1)] mb-6">
+      <div className="bg-card rounded-lg p-6 shadow-sm border border-border mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#6B7280]" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <input
               type="text"
               placeholder="Search students..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 rounded-lg bg-[#F3F3F5] border border-transparent focus:border-[#2563EB] focus:outline-none transition-colors"
+              className="w-full pl-10 pr-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
             />
           </div>
           <select
             value={courseFilter}
             onChange={(e) => setCourseFilter(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg bg-[#F3F3F5] border border-transparent focus:border-[#2563EB] focus:outline-none transition-colors"
+            className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
           >
             <option value="all">All Courses</option>
             {courses.map((course) => (
@@ -108,30 +108,30 @@ export const StudentProgress = () => {
       </div>
 
       {/* Students Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-[rgba(0,0,0,0.1)] overflow-hidden">
+      <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-[#F8FAFC] border-b border-[rgba(0,0,0,0.1)]">
+            <thead className="bg-muted border-b border-border">
               <tr>
-                <th className="px-6 py-4 text-left text-[#1F2937]" style={{ fontWeight: 600 }}>
+                <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
                   Student Name
                 </th>
-                <th className="px-6 py-4 text-left text-[#1F2937]" style={{ fontWeight: 600 }}>
+                <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
                   Batch
                 </th>
-                <th className="px-6 py-4 text-left text-[#1F2937]" style={{ fontWeight: 600 }}>
+                <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
                   Course
                 </th>
-                <th className="px-6 py-4 text-left text-[#1F2937]" style={{ fontWeight: 600 }}>
+                <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
                   Assignments Submitted
                 </th>
-                <th className="px-6 py-4 text-left text-[#1F2937]" style={{ fontWeight: 600 }}>
+                <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
                   Completion %
                 </th>
-                <th className="px-6 py-4 text-left text-[#1F2937]" style={{ fontWeight: 600 }}>
+                <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
                   Last Activity
                 </th>
-                <th className="px-6 py-4 text-left text-[#1F2937]" style={{ fontWeight: 600 }}>
+                <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
                   Trend
                 </th>
               </tr>
@@ -140,25 +140,25 @@ export const StudentProgress = () => {
               {filteredStudents.map((student) => (
                 <tr
                   key={student.id}
-                  className="border-b border-[rgba(0,0,0,0.1)] hover:bg-[#F8FAFC] transition-colors"
+                  className="border-b border-border hover:bg-muted transition-colors"
                 >
-                  <td className="px-6 py-4 text-[#1F2937]" style={{ fontWeight: 600 }}>
+                  <td className="px-6 py-4 text-foreground" style={{ fontWeight: 600 }}>
                     {student.name}
                   </td>
-                  <td className="px-6 py-4 text-[#6B7280]">{student.batch}</td>
+                  <td className="px-6 py-4 text-muted-foreground">{student.batch}</td>
                   <td className="px-6 py-4">
-                    <span className="px-3 py-1 bg-[#EEF2FF] text-[#2563EB] rounded-full text-sm">
+                    <span className="px-3 py-1 bg-primary/10 text-accent-primary rounded-full text-sm">
                       {student.course}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-[#6B7280]">
+                  <td className="px-6 py-4 text-muted-foreground">
                     {student.assignmentsSubmitted} / {student.totalAssignments}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-[#E5E7EB] rounded-full overflow-hidden max-w-[100px]">
+                      <div className="h-2 max-w-[100px] flex-1 overflow-hidden rounded-full bg-muted">
                         <div
-                          className="h-full bg-[#22C55E]"
+                          className="h-full bg-success"
                           style={{ width: `${student.completionRate}%` }}
                         ></div>
                       </div>
@@ -167,12 +167,12 @@ export const StudentProgress = () => {
                       </span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-[#6B7280]">{student.lastActivity}</td>
+                  <td className="px-6 py-4 text-muted-foreground">{student.lastActivity}</td>
                   <td className="px-6 py-4">
                     {student.trend === "up" ? (
-                      <TrendingUp className="w-5 h-5 text-[#22C55E]" />
+                      <TrendingUp className="w-5 h-5 text-success" />
                     ) : (
-                      <TrendingDown className="w-5 h-5 text-[#EF4444]" />
+                      <TrendingDown className="w-5 h-5 text-error" />
                     )}
                   </td>
                 </tr>
@@ -184,21 +184,21 @@ export const StudentProgress = () => {
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-[rgba(0,0,0,0.1)]">
-          <p className="text-[#6B7280] mb-2">Average Completion Rate</p>
-          <p className="text-3xl text-[#22C55E]" style={{ fontWeight: 700 }}>
+        <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
+          <p className="text-muted-foreground mb-2">Average Completion Rate</p>
+          <p className="text-3xl text-success" style={{ fontWeight: 700 }}>
             80%
           </p>
         </div>
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-[rgba(0,0,0,0.1)]">
-          <p className="text-[#6B7280] mb-2">Students Above 80%</p>
-          <p className="text-3xl text-[#2563EB]" style={{ fontWeight: 700 }}>
+        <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
+          <p className="text-muted-foreground mb-2">Students Above 80%</p>
+          <p className="text-3xl text-accent-primary" style={{ fontWeight: 700 }}>
             3 / 5
           </p>
         </div>
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-[rgba(0,0,0,0.1)]">
-          <p className="text-[#6B7280] mb-2">Students Need Attention</p>
-          <p className="text-3xl text-[#EF4444]" style={{ fontWeight: 700 }}>
+        <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
+          <p className="text-muted-foreground mb-2">Students Need Attention</p>
+          <p className="text-3xl text-error" style={{ fontWeight: 700 }}>
             1
           </p>
         </div>

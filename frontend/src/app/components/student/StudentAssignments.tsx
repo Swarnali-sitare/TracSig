@@ -55,15 +55,15 @@ export const StudentAssignments = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending":
-        return "bg-[#FFFBEB] text-[#F59E0B] border-[#FDE68A]";
+        return "bg-warning/10 text-warning border-warning/40";
       case "saved":
-        return "bg-[#EEF2FF] text-[#2563EB] border-[#BFDBFE]";
+        return "bg-primary/10 text-accent-primary border-info/40";
       case "submitted":
-        return "bg-[#F0FDF4] text-[#22C55E] border-[#BBF7D0]";
+        return "bg-success/10 text-success border-success/40";
       case "overdue":
-        return "bg-[#FEF2F2] text-[#EF4444] border-[#FECACA]";
+        return "bg-error/10 text-error border-error/40";
       default:
-        return "bg-[#F3F4F6] text-[#6B7280] border-[#E5E7EB]";
+        return "bg-muted text-muted-foreground border-border";
     }
   };
 
@@ -85,27 +85,27 @@ export const StudentAssignments = () => {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <h1 className="mb-6 text-[#1F2937]">My Assignments</h1>
+      <h1 className="mb-6 text-foreground">My Assignments</h1>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg p-6 shadow-sm border border-[rgba(0,0,0,0.1)] mb-6">
+      <div className="bg-card rounded-lg p-6 shadow-sm border border-border mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#6B7280]" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <input
               type="text"
               placeholder="Search assignments..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 rounded-lg bg-[#F3F3F5] border border-transparent focus:border-[#2563EB] focus:outline-none transition-colors"
+              className="w-full pl-10 pr-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
             />
           </div>
           <div className="relative">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#6B7280]" />
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 rounded-lg bg-[#F3F3F5] border border-transparent focus:border-[#2563EB] focus:outline-none transition-colors"
+              className="w-full pl-10 pr-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
             >
               <option value="all">All Status</option>
               <option value="pending">Pending</option>
@@ -118,24 +118,24 @@ export const StudentAssignments = () => {
       </div>
 
       {/* Assignments Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-[rgba(0,0,0,0.1)] overflow-hidden">
+      <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-[#F8FAFC] border-b border-[rgba(0,0,0,0.1)]">
+            <thead className="bg-muted border-b border-border">
               <tr>
-                <th className="px-6 py-4 text-left text-[#1F2937]" style={{ fontWeight: 600 }}>
+                <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
                   Assignment Title
                 </th>
-                <th className="px-6 py-4 text-left text-[#1F2937]" style={{ fontWeight: 600 }}>
+                <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
                   Course
                 </th>
-                <th className="px-6 py-4 text-left text-[#1F2937]" style={{ fontWeight: 600 }}>
+                <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
                   Due Date
                 </th>
-                <th className="px-6 py-4 text-left text-[#1F2937]" style={{ fontWeight: 600 }}>
+                <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
                   Status
                 </th>
-                <th className="px-6 py-4 text-left text-[#1F2937]" style={{ fontWeight: 600 }}>
+                <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
                   Action
                 </th>
               </tr>
@@ -146,22 +146,22 @@ export const StudentAssignments = () => {
                 return (
                   <tr
                     key={assignment.id}
-                    className="border-b border-[rgba(0,0,0,0.1)] hover:bg-[#F8FAFC] transition-colors"
+                    className="border-b border-border hover:bg-muted transition-colors"
                   >
-                    <td className="px-6 py-4 text-[#1F2937]" style={{ fontWeight: 600 }}>
+                    <td className="px-6 py-4 text-foreground" style={{ fontWeight: 600 }}>
                       {assignment.title}
                     </td>
-                    <td className="px-6 py-4 text-[#6B7280]">{assignment.course}</td>
+                    <td className="px-6 py-4 text-muted-foreground">{assignment.course}</td>
                     <td className="px-6 py-4">
                       <div>
-                        <p className="text-[#1F2937]">{assignment.dueDate}</p>
+                        <p className="text-foreground">{assignment.dueDate}</p>
                         {daysUntilDue > 0 && assignment.status !== "submitted" && (
-                          <p className="text-xs text-[#6B7280] mt-1">
+                          <p className="text-xs text-muted-foreground mt-1">
                             {daysUntilDue} {daysUntilDue === 1 ? "day" : "days"} left
                           </p>
                         )}
                         {daysUntilDue <= 0 && assignment.status !== "submitted" && (
-                          <p className="text-xs text-[#EF4444] mt-1">Overdue</p>
+                          <p className="text-xs text-error mt-1">Overdue</p>
                         )}
                       </div>
                     </td>
@@ -175,7 +175,7 @@ export const StudentAssignments = () => {
                     <td className="px-6 py-4">
                       <button
                         onClick={() => navigate(`/student/assignments/${assignment.id}`)}
-                        className="px-4 py-2 bg-[#2563EB] text-white rounded-lg hover:bg-[#1D4ED8] transition-colors"
+                        className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-accent-hover transition-colors"
                       >
                         {assignment.status === "submitted" ? "View" : "Work"}
                       </button>
