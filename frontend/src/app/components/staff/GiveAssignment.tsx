@@ -1,59 +1,71 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { Save, Send, Eye } from "lucide-react";
+import { Send, Eye } from "lucide-react";
 import { toast } from "sonner";
+import api from "@/lib/api";
+
+interface Course {
+  id: string;
+  code: string;
+  name: string;
+}
 
 export const GiveAssignment = () => {
   const navigate = useNavigate();
+  const [courses, setCourses] = useState<Course[]>([]);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    course: "",
-    dueDate: "",
+    course_id: "",
+    due_date: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
-  const courses = [
-    { id: "cs101", name: "CS101 - Introduction to Programming" },
-    { id: "cs201", name: "CS201 - Data Structures" },
-    { id: "cs301", name: "CS301 - Web Development" },
-    { id: "cs401", name: "CS401 - Machine Learning" },
-  ];
+  useEffect(() => {
+    api.get("/staff/courses")
+      .then((res) => setCourses(res.data.data))
+      .catch(console.error);
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation
-    if (!formData.title || !formData.description || !formData.course || !formData.dueDate) {
+    if (!formData.title || !formData.description || !formData.course_id || !formData.due_date) {
       toast.error("Please fill in all required fields");
       return;
     }
 
-    // Check if due date is in the future
-    const dueDate = new Date(formData.dueDate);
-    const today = new Date();
-    if (dueDate < today) {
+    const dueDate = new Date(formData.due_date);
+    if (dueDate <= new Date()) {
       toast.error("Due date must be in the future");
       return;
     }
 
     setIsSubmitting(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsSubmitting(false);
-    toast.success("Assignment created successfully!");
-    navigate("/staff/dashboard");
+    try {
+      await api.post("/staff/assignments", {
+        title: formData.title,
+        description: formData.description,
+        course_id: formData.course_id,
+        due_date: new Date(formData.due_date).toISOString(),
+      });
+      toast.success("Assignment created successfully!");
+      navigate("/staff/dashboard");
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to create assignment";
+      toast.error(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const isFormValid = formData.title && formData.description && formData.course && formData.dueDate;
+  const isFormValid = formData.title && formData.description && formData.course_id && formData.due_date;
+  const selectedCourse = courses.find((c) => c.id === formData.course_id);
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -62,7 +74,6 @@ export const GiveAssignment = () => {
       <form onSubmit={handleSubmit}>
         <div className="bg-card rounded-lg shadow-sm border border-border p-6 mb-6">
           <div className="space-y-6">
-            {/* Assignment Title */}
             <div>
               <label htmlFor="title" className="block mb-2 text-foreground">
                 Assignment Title <span className="text-error">*</span>
@@ -78,28 +89,26 @@ export const GiveAssignment = () => {
               />
             </div>
 
-            {/* Course Selection */}
             <div>
-              <label htmlFor="course" className="block mb-2 text-foreground">
+              <label htmlFor="course_id" className="block mb-2 text-foreground">
                 Course <span className="text-error">*</span>
               </label>
               <select
-                id="course"
-                name="course"
-                value={formData.course}
+                id="course_id"
+                name="course_id"
+                value={formData.course_id}
                 onChange={handleChange}
                 className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
               >
                 <option value="">Select a course</option>
                 {courses.map((course) => (
                   <option key={course.id} value={course.id}>
-                    {course.name}
+                    {course.code} — {course.name}
                   </option>
                 ))}
               </select>
             </div>
 
-            {/* Description */}
             <div>
               <label htmlFor="description" className="block mb-2 text-foreground">
                 Description <span className="text-error">*</span>
@@ -115,16 +124,15 @@ export const GiveAssignment = () => {
               />
             </div>
 
-            {/* Due Date */}
             <div>
-              <label htmlFor="dueDate" className="block mb-2 text-foreground">
+              <label htmlFor="due_date" className="block mb-2 text-foreground">
                 Due Date <span className="text-error">*</span>
               </label>
               <input
-                id="dueDate"
-                name="dueDate"
+                id="due_date"
+                name="due_date"
                 type="date"
-                value={formData.dueDate}
+                value={formData.due_date}
                 onChange={handleChange}
                 min={new Date().toISOString().split("T")[0]}
                 className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
@@ -133,7 +141,6 @@ export const GiveAssignment = () => {
           </div>
         </div>
 
-        {/* Form Actions */}
         <div className="flex items-center justify-between">
           <button
             type="button"
@@ -164,7 +171,6 @@ export const GiveAssignment = () => {
         </div>
       </form>
 
-      {/* Preview Modal */}
       {showPreview && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-card rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -176,11 +182,11 @@ export const GiveAssignment = () => {
                 {formData.title || "Untitled Assignment"}
               </h3>
               <p className="text-muted-foreground mb-4">
-                {courses.find((c) => c.id === formData.course)?.name || "No course selected"}
+                {selectedCourse ? `${selectedCourse.code} — ${selectedCourse.name}` : "No course selected"}
               </p>
               <div className="mb-4">
                 <span className="text-sm text-muted-foreground">Due Date: </span>
-                <span className="text-foreground">{formData.dueDate || "Not set"}</span>
+                <span className="text-foreground">{formData.due_date || "Not set"}</span>
               </div>
               <div className="bg-muted p-4 rounded-lg">
                 <h4 className="mb-2 text-foreground">Description</h4>

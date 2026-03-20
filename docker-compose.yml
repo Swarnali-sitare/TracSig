@@ -1,0 +1,20 @@
+# PostgreSQL for local dev — matches backend/.env.example DATABASE_URL
+services:
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: tracsig
+    volumes:
+      - tracsig_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tracsig"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  tracsig_pgdata:

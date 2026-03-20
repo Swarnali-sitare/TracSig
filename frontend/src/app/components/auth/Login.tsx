@@ -22,18 +22,14 @@ export const Login = () => {
 
     setIsLoading(true);
     try {
-      let role: "student" | "staff" | "admin" = "student";
-      if (email.includes("staff")) {
-        role = "staff";
-      } else if (email.includes("admin")) {
-        role = "admin";
-      }
-
-      await login(email, password, role);
+      await login(email, password);
       toast.success("Login successful!");
+      // Role is set in AuthContext from API response; read from localStorage
+      const stored = localStorage.getItem("tracsig_user");
+      const role = stored ? JSON.parse(stored).role : "student";
       navigate(`/${role}/dashboard`);
     } catch {
-      toast.error("Login failed. Please try again.");
+      toast.error("Invalid email or password.");
     } finally {
       setIsLoading(false);
     }
@@ -106,9 +102,9 @@ export const Login = () => {
       <div className="mt-8 rounded-lg border border-border bg-muted p-4">
         <p className="mb-2 text-sm font-medium text-accent-primary">Demo Login Credentials:</p>
         <ul className="space-y-1 text-xs text-muted-foreground">
-          <li>Student: student@example.com</li>
-          <li>Staff: staff@example.com</li>
-          <li>Admin: admin@example.com</li>
+          <li>Student: student@tracsig.com / student123</li>
+          <li>Staff: staff@tracsig.com / staff123</li>
+          <li>Admin: admin@tracsig.com / admin123</li>
           <li>Password: any password</li>
         </ul>
       </div>

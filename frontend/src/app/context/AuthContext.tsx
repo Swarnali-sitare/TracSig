@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { useNavigate } from "react-router";
+import api from "@/lib/api";
 
 export type UserRole = "student" | "staff" | "admin";
 
@@ -8,6 +8,8 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
+  department?: string;
+  batch_id?: string | null;
 }
 
 interface AuthContextType {
@@ -25,51 +27,62 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for stored user on mount
+    const token = localStorage.getItem("tracsig_token");
     const storedUser = localStorage.getItem("tracsig_user");
-    if (storedUser) {
+    if (token && storedUser) {
       setUser(JSON.parse(storedUser));
+      // Verify token is still valid
+      api.get("/auth/me")
+        .then(({ data }) => {
+          const u = data.data.user as User;
+          setUser(u);
+          localStorage.setItem("tracsig_user", JSON.stringify(u));
+        })
+        .catch(() => {
+          localStorage.removeItem("tracsig_token");
+          localStorage.removeItem("tracsig_user");
+          setUser(null);
+        })
+        .finally(() => setIsLoading(false));
+    } else {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string, role?: UserRole) => {
+  const login = async (email: string, password: string, _role?: UserRole) => {
     setIsLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    // Mock user - in real app this would come from API
-    const mockUser: User = {
-      id: "1",
-      name: email.split("@")[0],
-      email,
-      role: role || "student",
-    };
-
-    setUser(mockUser);
-    localStorage.setItem("tracsig_user", JSON.stringify(mockUser));
-    setIsLoading(false);
+    try {
+      const { data } = await api.post("/auth/login", { email, password });
+      const { user: u, access_token } = data.data;
+      localStorage.setItem("tracsig_token", access_token);
+      localStorage.setItem("tracsig_user", JSON.stringify(u));
+      setUser(u as User);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const register = async (name: string, email: string, password: string, role: UserRole) => {
     setIsLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    const newUser: User = {
-      id: Math.random().toString(36).substr(2, 9),
-      name,
-      email,
-      role,
-    };
-
-    setUser(newUser);
-    localStorage.setItem("tracsig_user", JSON.stringify(newUser));
-    setIsLoading(false);
+    try {
+      const { data } = await api.post("/auth/register", { name, email, password, role });
+      const { user: u, access_token } = data.data;
+      localStorage.setItem("tracsig_token", access_token);
+      localStorage.setItem("tracsig_user", JSON.stringify(u));
+      setUser(u as User);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch {
+      // Ignore errors on logout
+    }
     setUser(null);
+    localStorage.removeItem("tracsig_token");
     localStorage.removeItem("tracsig_user");
   };
 
