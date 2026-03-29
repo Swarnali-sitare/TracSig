@@ -1,0 +1,25 @@
+# Local or single-server PostgreSQL for TracSig.
+# Usage: docker compose up -d
+# Then set DATABASE_URL=postgresql://tracsig:tracsig@localhost:5432/tracsig
+# (change the password in production and match DATABASE_URL).
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tracsig
+      POSTGRES_PASSWORD: tracsig
+      POSTGRES_DB: tracsig
+    ports:
+      - "5432:5432"
+    volumes:
+      - tracsig_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tracsig -d tracsig"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  tracsig_pgdata:
