@@ -1,73 +1,81 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Search, TrendingUp, TrendingDown } from "lucide-react";
+import { toast } from "sonner";
+import { ApiRequestError } from "../../services/api";
+import { fetchStaffCourses, fetchStaffStudentProgress } from "../../services/tracsigApi";
+
+type ProgressRow = {
+  student_id: number;
+  name: string;
+  batch: string;
+  course_code: string;
+  assignments_submitted: number;
+  total_assignments: number;
+  completion_rate: number;
+  last_activity: string;
+  trend: string;
+};
 
 export const StudentProgress = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [courseFilter, setCourseFilter] = useState("all");
+  const [courses, setCourses] = useState<{ id: number; code: string; name: string }[]>([]);
+  const [items, setItems] = useState<ProgressRow[]>([]);
+  const [summary, setSummary] = useState({
+    average_completion_rate: 0,
+    students_above_80_percent: 0,
+    students_total: 0,
+    students_need_attention: 0,
+  });
+  const [loading, setLoading] = useState(true);
 
-  const students = [
-    {
-      id: 1,
-      name: "Alice Johnson",
-      batch: "2023",
-      course: "CS201",
-      assignmentsSubmitted: 18,
-      totalAssignments: 20,
-      completionRate: 90,
-      lastActivity: "2026-03-14",
-      trend: "up",
-    },
-    {
-      id: 2,
-      name: "Bob Smith",
-      batch: "2023",
-      course: "CS201",
-      assignmentsSubmitted: 15,
-      totalAssignments: 20,
-      completionRate: 75,
-      lastActivity: "2026-03-13",
-      trend: "up",
-    },
-    {
-      id: 3,
-      name: "Charlie Brown",
-      batch: "2023",
-      course: "CS301",
-      assignmentsSubmitted: 12,
-      totalAssignments: 20,
-      completionRate: 60,
-      lastActivity: "2026-03-12",
-      trend: "down",
-    },
-    {
-      id: 4,
-      name: "Diana Prince",
-      batch: "2023",
-      course: "CS201",
-      assignmentsSubmitted: 19,
-      totalAssignments: 20,
-      completionRate: 95,
-      lastActivity: "2026-03-15",
-      trend: "up",
-    },
-    {
-      id: 5,
-      name: "Ethan Hunt",
-      batch: "2023",
-      course: "CS301",
-      assignmentsSubmitted: 16,
-      totalAssignments: 20,
-      completionRate: 80,
-      lastActivity: "2026-03-14",
-      trend: "up",
-    },
-  ];
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const c = await fetchStaffCourses();
+        if (!cancelled) setCourses(c.items);
+      } catch {
+        if (!cancelled) setCourses([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-  const courses = ["CS201", "CS301", "CS401"];
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const res = await fetchStaffStudentProgress(courseFilter === "all" ? undefined : courseFilter);
+        if (cancelled) return;
+        setItems((res.items as ProgressRow[]) ?? []);
+        setSummary(
+          res.summary ?? {
+            average_completion_rate: 0,
+            students_above_80_percent: 0,
+            students_total: 0,
+            students_need_attention: 0,
+          }
+        );
+      } catch (e) {
+        if (!cancelled) {
+          if (e instanceof ApiRequestError) toast.error(e.message);
+          else toast.error("Could not load progress");
+          setItems([]);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [courseFilter]);
 
-  const filteredStudents = students
-    .filter((s) => courseFilter === "all" || s.course === courseFilter)
-    .filter((s) => s.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredStudents = items.filter((s) => s.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
   const getCompletionColor = (rate: number) => {
     if (rate >= 80) return "text-success";
@@ -75,11 +83,18 @@ export const StudentProgress = () => {
     return "text-error";
   };
 
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto">
+        <p className="text-muted-foreground">Loading progress…</p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto">
       <h1 className="mb-6 text-foreground">Student Progress</h1>
 
-      {/* Filters */}
       <div className="bg-card rounded-lg p-6 shadow-sm border border-border mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="relative">
@@ -99,15 +114,14 @@ export const StudentProgress = () => {
           >
             <option value="all">All Courses</option>
             {courses.map((course) => (
-              <option key={course} value={course}>
-                {course}
+              <option key={course.id} value={course.code}>
+                {course.code}
               </option>
             ))}
           </select>
         </div>
       </div>
 
-      {/* Students Table */}
       <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -137,69 +151,76 @@ export const StudentProgress = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredStudents.map((student) => (
-                <tr
-                  key={student.id}
-                  className="border-b border-border hover:bg-muted transition-colors"
-                >
-                  <td className="px-6 py-4 text-foreground" style={{ fontWeight: 600 }}>
-                    {student.name}
-                  </td>
-                  <td className="px-6 py-4 text-muted-foreground">{student.batch}</td>
-                  <td className="px-6 py-4">
-                    <span className="px-3 py-1 bg-primary/10 text-accent-primary rounded-full text-sm">
-                      {student.course}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-muted-foreground">
-                    {student.assignmentsSubmitted} / {student.totalAssignments}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 max-w-[100px] flex-1 overflow-hidden rounded-full bg-muted">
-                        <div
-                          className="h-full bg-success"
-                          style={{ width: `${student.completionRate}%` }}
-                        ></div>
-                      </div>
-                      <span className={`${getCompletionColor(student.completionRate)}`} style={{ fontWeight: 600 }}>
-                        {student.completionRate}%
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-muted-foreground">{student.lastActivity}</td>
-                  <td className="px-6 py-4">
-                    {student.trend === "up" ? (
-                      <TrendingUp className="w-5 h-5 text-success" />
-                    ) : (
-                      <TrendingDown className="w-5 h-5 text-error" />
-                    )}
+              {filteredStudents.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-8 text-center text-muted-foreground">
+                    No progress data for this filter.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredStudents.map((student) => (
+                  <tr
+                    key={`${student.student_id}-${student.course_code}`}
+                    className="border-b border-border hover:bg-muted transition-colors"
+                  >
+                    <td className="px-6 py-4 text-foreground" style={{ fontWeight: 600 }}>
+                      {student.name}
+                    </td>
+                    <td className="px-6 py-4 text-muted-foreground">{student.batch}</td>
+                    <td className="px-6 py-4">
+                      <span className="px-3 py-1 bg-primary/10 text-accent-primary rounded-full text-sm">
+                        {student.course_code}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-muted-foreground">
+                      {student.assignments_submitted} / {student.total_assignments}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 max-w-[100px] flex-1 overflow-hidden rounded-full bg-muted">
+                          <div
+                            className="h-full bg-success"
+                            style={{ width: `${student.completion_rate}%` }}
+                          ></div>
+                        </div>
+                        <span className={`${getCompletionColor(student.completion_rate)}`} style={{ fontWeight: 600 }}>
+                          {student.completion_rate}%
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-muted-foreground">{student.last_activity || "—"}</td>
+                    <td className="px-6 py-4">
+                      {student.trend === "up" ? (
+                        <TrendingUp className="w-5 h-5 text-success" />
+                      ) : (
+                        <TrendingDown className="w-5 h-5 text-error" />
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
         <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
           <p className="text-muted-foreground mb-2">Average Completion Rate</p>
           <p className="text-3xl text-success" style={{ fontWeight: 700 }}>
-            80%
+            {summary.average_completion_rate}%
           </p>
         </div>
         <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
           <p className="text-muted-foreground mb-2">Students Above 80%</p>
           <p className="text-3xl text-accent-primary" style={{ fontWeight: 700 }}>
-            3 / 5
+            {summary.students_above_80_percent} / {summary.students_total || "—"}
           </p>
         </div>
         <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
           <p className="text-muted-foreground mb-2">Students Need Attention</p>
           <p className="text-3xl text-error" style={{ fontWeight: 700 }}>
-            1
+            {summary.students_need_attention}
           </p>
         </div>
       </div>

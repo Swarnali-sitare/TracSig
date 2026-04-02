@@ -2,10 +2,20 @@ import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
+import { formatDistanceToNow } from "date-fns";
+import {
+  deleteAllNotifications,
+  deleteNotification,
+  fetchNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
+  type NotificationDto,
+} from "../services/tracsigApi";
 
 export type NotificationIconKey = "bell" | "alert" | "check" | "info";
 
@@ -21,110 +31,114 @@ export interface NotificationItem {
   bgColor: string;
 }
 
-const INITIAL_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: 1,
-    type: "assignment",
-    title: "New Assignment Posted",
-    message: "Data Structures Project has been posted in CS201",
-    time: "5 minutes ago",
-    unread: true,
-    iconKey: "bell",
-    color: "var(--accent-primary)",
-    bgColor: "color-mix(in srgb, var(--accent-primary) 16%, transparent)",
-  },
-  {
-    id: 2,
-    type: "reminder",
-    title: "Assignment Due Soon",
-    message: "Web Development Assignment is due in 2 days",
-    time: "1 hour ago",
-    unread: true,
-    iconKey: "alert",
-    color: "var(--warning)",
-    bgColor: "color-mix(in srgb, var(--warning) 18%, transparent)",
-  },
-  {
-    id: 3,
-    type: "evaluation",
-    title: "Assignment Evaluated",
-    message: "Your submission for Algorithm Analysis has been evaluated",
-    time: "3 hours ago",
-    unread: false,
-    iconKey: "check",
-    color: "var(--success)",
-    bgColor: "color-mix(in srgb, var(--success) 16%, transparent)",
-  },
-  {
-    id: 4,
-    type: "submission",
-    title: "Submission Confirmed",
-    message: "Your submission for UI/UX Design was received successfully",
-    time: "1 day ago",
-    unread: false,
-    iconKey: "check",
-    color: "var(--success)",
-    bgColor: "color-mix(in srgb, var(--success) 16%, transparent)",
-  },
-  {
-    id: 5,
-    type: "system",
-    title: "System Maintenance",
-    message: "The system will undergo maintenance on Sunday, 3:00 AM - 5:00 AM",
-    time: "2 days ago",
-    unread: false,
-    iconKey: "info",
-    color: "var(--text-secondary)",
-    bgColor: "color-mix(in srgb, var(--text-secondary) 12%, transparent)",
-  },
-  {
-    id: 6,
-    type: "reminder",
-    title: "Deadline Approaching",
-    message: "Database Design assignment deadline is tomorrow",
-    time: "3 days ago",
-    unread: false,
-    iconKey: "alert",
-    color: "var(--warning)",
-    bgColor: "color-mix(in srgb, var(--warning) 18%, transparent)",
-  },
-];
+function mapIconKey(iconKey: string): NotificationIconKey {
+  if (iconKey === "bell" || iconKey === "alert" || iconKey === "check" || iconKey === "info") {
+    return iconKey;
+  }
+  return "info";
+}
+
+function colorsForIcon(iconKey: NotificationIconKey): { color: string; bgColor: string } {
+  switch (iconKey) {
+    case "bell":
+      return {
+        color: "var(--accent-primary)",
+        bgColor: "color-mix(in srgb, var(--accent-primary) 16%, transparent)",
+      };
+    case "alert":
+      return {
+        color: "var(--warning)",
+        bgColor: "color-mix(in srgb, var(--warning) 18%, transparent)",
+      };
+    case "check":
+      return {
+        color: "var(--success)",
+        bgColor: "color-mix(in srgb, var(--success) 16%, transparent)",
+      };
+    default:
+      return {
+        color: "var(--text-secondary)",
+        bgColor: "color-mix(in srgb, var(--text-secondary) 12%, transparent)",
+      };
+  }
+}
+
+function dtoToItem(n: NotificationDto): NotificationItem {
+  const iconKey = mapIconKey(n.icon_key || "info");
+  const { color, bgColor } = colorsForIcon(iconKey);
+  let time = "";
+  if (n.created_at) {
+    try {
+      time = formatDistanceToNow(new Date(n.created_at), { addSuffix: true });
+    } catch {
+      time = "";
+    }
+  }
+  return {
+    id: n.id,
+    type: n.type,
+    title: n.title,
+    message: n.message,
+    time,
+    unread: !n.is_read,
+    iconKey,
+    color,
+    bgColor,
+  };
+}
 
 interface NotificationsContextValue {
   notifications: NotificationItem[];
   unreadCount: number;
+  isLoading: boolean;
+  refetch: () => Promise<void>;
   markAsRead: (id: number) => void;
   markAllAsRead: () => void;
-  /** Remove one notification from the list */
   clearNotification: (id: number) => void;
-  /** Remove all notifications from the list */
   clearAllNotifications: () => void;
 }
 
 const NotificationsContext = createContext<NotificationsContextValue | null>(null);
 
 export function NotificationsProvider({ children }: { children: ReactNode }) {
-  const [notifications, setNotifications] = useState<NotificationItem[]>(() => [
-    ...INITIAL_NOTIFICATIONS,
-  ]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const refetch = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const { items } = await fetchNotifications();
+      setNotifications(items.map(dtoToItem));
+    } catch {
+      setNotifications([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refetch();
+  }, [refetch]);
 
   const markAsRead = useCallback((id: number) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, unread: false } : n))
-    );
-  }, []);
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, unread: false } : n)));
+    void markNotificationRead(id).catch(() => refetch());
+  }, [refetch]);
 
   const markAllAsRead = useCallback(() => {
     setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
-  }, []);
+    void markAllNotificationsRead().catch(() => refetch());
+  }, [refetch]);
 
   const clearNotification = useCallback((id: number) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
-  }, []);
+    void deleteNotification(id).catch(() => refetch());
+  }, [refetch]);
 
   const clearAllNotifications = useCallback(() => {
     setNotifications([]);
-  }, []);
+    void deleteAllNotifications().catch(() => refetch());
+  }, [refetch]);
 
   const unreadCount = useMemo(
     () => notifications.filter((n) => n.unread).length,
@@ -135,6 +149,8 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     () => ({
       notifications,
       unreadCount,
+      isLoading,
+      refetch,
       markAsRead,
       markAllAsRead,
       clearNotification,
@@ -143,6 +159,8 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     [
       notifications,
       unreadCount,
+      isLoading,
+      refetch,
       markAsRead,
       markAllAsRead,
       clearNotification,

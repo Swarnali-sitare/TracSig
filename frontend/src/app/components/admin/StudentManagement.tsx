@@ -1,68 +1,106 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Search, Filter, UserPlus, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { ApiRequestError } from "../../services/api";
+import {
+  createAdminStudent,
+  deleteAdminStudent,
+  fetchAdminBatches,
+  fetchAdminStudents,
+} from "../../services/tracsigApi";
+
+type StudentRow = {
+  id: number;
+  name: string;
+  email: string;
+  batch: string;
+  department: string | null;
+  progress_percent: number;
+};
 
 export const StudentManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [batchFilter, setBatchFilter] = useState("all");
   const [showAddStudent, setShowAddStudent] = useState(false);
+  const [students, setStudents] = useState<StudentRow[]>([]);
+  const [batches, setBatches] = useState<{ id: number; name: string; year_label: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    batch_id: "",
+    department: "",
+  });
 
-  const students = [
-    {
-      id: 1,
-      name: "Alice Johnson",
-      email: "alice@example.com",
-      batch: "2023",
-      department: "Computer Science",
-      progress: 90,
-    },
-    {
-      id: 2,
-      name: "Bob Smith",
-      email: "bob@example.com",
-      batch: "2023",
-      department: "Information Technology",
-      progress: 75,
-    },
-    {
-      id: 3,
-      name: "Charlie Brown",
-      email: "charlie@example.com",
-      batch: "2024",
-      department: "Computer Science",
-      progress: 85,
-    },
-    {
-      id: 4,
-      name: "Diana Prince",
-      email: "diana@example.com",
-      batch: "2023",
-      department: "Electronics",
-      progress: 92,
-    },
-    {
-      id: 5,
-      name: "Ethan Hunt",
-      email: "ethan@example.com",
-      batch: "2024",
-      department: "Information Technology",
-      progress: 88,
-    },
-  ];
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [stRes, bRes] = await Promise.all([
+        fetchAdminStudents({
+          batch: batchFilter === "all" ? undefined : batchFilter,
+          search: searchTerm.trim() || undefined,
+        }),
+        fetchAdminBatches(),
+      ]);
+      setStudents((stRes.items as StudentRow[]) ?? []);
+      setBatches(bRes.items ?? []);
+    } catch (e) {
+      if (e instanceof ApiRequestError) toast.error(e.message);
+      else toast.error("Could not load students");
+    } finally {
+      setLoading(false);
+    }
+  }, [batchFilter, searchTerm]);
 
-  const batches = ["2023", "2024", "2025"];
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      void load();
+    }, 300);
+    return () => clearTimeout(t);
+  }, [batchFilter, searchTerm, load]);
 
-  const filteredStudents = students
-    .filter((s) => batchFilter === "all" || s.batch === batchFilter)
-    .filter(
-      (s) =>
-        s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-  const handleDeleteStudent = (id: number) => {
-    toast.success("Student removed successfully");
+  const handleDeleteStudent = async (id: number) => {
+    try {
+      await deleteAdminStudent(id);
+      toast.success("Student removed successfully");
+      await load();
+    } catch (e) {
+      if (e instanceof ApiRequestError) toast.error(e.message);
+      else toast.error("Delete failed");
+    }
   };
+
+  const handleAddStudent = async () => {
+    if (!form.name.trim() || !form.email.trim() || !form.password || !form.batch_id) {
+      toast.error("Fill all required fields");
+      return;
+    }
+    try {
+      await createAdminStudent({
+        name: form.name.trim(),
+        email: form.email.trim(),
+        password: form.password,
+        batch_id: Number(form.batch_id),
+        department: form.department.trim() || null,
+      });
+      toast.success("Student added successfully");
+      setShowAddStudent(false);
+      setForm({ name: "", email: "", password: "", batch_id: "", department: "" });
+      await load();
+    } catch (e) {
+      if (e instanceof ApiRequestError) toast.error(e.message);
+      else toast.error("Could not create student");
+    }
+  };
+
+  if (loading && students.length === 0) {
+    return (
+      <div className="max-w-7xl mx-auto">
+        <p className="text-muted-foreground">Loading students…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -77,7 +115,6 @@ export const StudentManagement = () => {
         </button>
       </div>
 
-      {/* Filters */}
       <div className="bg-card rounded-lg p-6 shadow-sm border border-border mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="relative">
@@ -98,9 +135,9 @@ export const StudentManagement = () => {
               className="w-full pl-10 pr-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
             >
               <option value="all">All Batches</option>
-              {batches.map((batch) => (
-                <option key={batch} value={batch}>
-                  Batch {batch}
+              {batches.map((b) => (
+                <option key={b.id} value={b.year_label}>
+                  {b.name} ({b.year_label})
                 </option>
               ))}
             </select>
@@ -108,7 +145,6 @@ export const StudentManagement = () => {
         </div>
       </div>
 
-      {/* Students Table */}
       <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -135,57 +171,66 @@ export const StudentManagement = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredStudents.map((student) => (
-                <tr
-                  key={student.id}
-                  className="border-b border-border hover:bg-muted transition-colors"
-                >
-                  <td className="px-6 py-4 text-foreground" style={{ fontWeight: 600 }}>
-                    {student.name}
-                  </td>
-                  <td className="px-6 py-4 text-muted-foreground">{student.email}</td>
-                  <td className="px-6 py-4">
-                    <span className="px-3 py-1 bg-primary/10 text-accent-primary rounded-full text-sm">
-                      {student.batch}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-muted-foreground">{student.department}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 max-w-[100px] flex-1 overflow-hidden rounded-full bg-muted">
-                        <div
-                          className="h-full bg-success"
-                          style={{ width: `${student.progress}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-sm text-muted-foreground">{student.progress}%</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex gap-2">
-                      <button
-                        className="p-2 hover:bg-muted rounded-lg transition-colors"
-                        title="Edit student"
-                      >
-                        <Edit className="w-4 h-4 text-accent-primary" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteStudent(student.id)}
-                        className="p-2 hover:bg-error/10 rounded-lg transition-colors"
-                        title="Delete student"
-                      >
-                        <Trash2 className="w-4 h-4 text-error" />
-                      </button>
-                    </div>
+              {students.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">
+                    No students match your filters.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                students.map((student) => (
+                  <tr
+                    key={student.id}
+                    className="border-b border-border hover:bg-muted transition-colors"
+                  >
+                    <td className="px-6 py-4 text-foreground" style={{ fontWeight: 600 }}>
+                      {student.name}
+                    </td>
+                    <td className="px-6 py-4 text-muted-foreground">{student.email}</td>
+                    <td className="px-6 py-4">
+                      <span className="px-3 py-1 bg-primary/10 text-accent-primary rounded-full text-sm">
+                        {student.batch}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-muted-foreground">{student.department ?? "—"}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 max-w-[100px] flex-1 overflow-hidden rounded-full bg-muted">
+                          <div
+                            className="h-full bg-success"
+                            style={{ width: `${student.progress_percent}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-sm text-muted-foreground">{student.progress_percent}%</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          className="p-2 hover:bg-muted rounded-lg transition-colors opacity-50 cursor-not-allowed"
+                          disabled
+                          title="Edit not available via API"
+                        >
+                          <Edit className="w-4 h-4 text-accent-primary" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteStudent(student.id)}
+                          className="p-2 hover:bg-error/10 rounded-lg transition-colors"
+                          title="Delete student"
+                        >
+                          <Trash2 className="w-4 h-4 text-error" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Add Student Modal */}
       {showAddStudent && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-card rounded-lg max-w-md w-full">
@@ -197,6 +242,8 @@ export const StudentManagement = () => {
                 <label className="block mb-2 text-foreground">Full Name</label>
                 <input
                   type="text"
+                  value={form.name}
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                   className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
                   placeholder="Enter student name"
                 />
@@ -205,30 +252,46 @@ export const StudentManagement = () => {
                 <label className="block mb-2 text-foreground">Email</label>
                 <input
                   type="email"
+                  value={form.email}
+                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                   className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
                   placeholder="Enter email"
                 />
               </div>
               <div>
+                <label className="block mb-2 text-foreground">Password</label>
+                <input
+                  type="password"
+                  value={form.password}
+                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                  className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
+                  placeholder="Min 6 characters"
+                />
+              </div>
+              <div>
                 <label className="block mb-2 text-foreground">Batch</label>
-                <select className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors">
+                <select
+                  value={form.batch_id}
+                  onChange={(e) => setForm((f) => ({ ...f, batch_id: e.target.value }))}
+                  className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
+                >
                   <option value="">Select batch</option>
                   {batches.map((batch) => (
-                    <option key={batch} value={batch}>
-                      {batch}
+                    <option key={batch.id} value={batch.id}>
+                      {batch.name} ({batch.year_label})
                     </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block mb-2 text-foreground">Department</label>
-                <select className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors">
-                  <option value="">Select department</option>
-                  <option value="cs">Computer Science</option>
-                  <option value="it">Information Technology</option>
-                  <option value="ec">Electronics</option>
-                  <option value="me">Mechanical</option>
-                </select>
+                <label className="block mb-2 text-foreground">Department (optional)</label>
+                <input
+                  type="text"
+                  value={form.department}
+                  onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))}
+                  className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
+                  placeholder="Department"
+                />
               </div>
             </div>
             <div className="p-6 border-t border-border flex justify-end gap-3">
@@ -239,10 +302,7 @@ export const StudentManagement = () => {
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  toast.success("Student added successfully");
-                  setShowAddStudent(false);
-                }}
+                onClick={handleAddStudent}
                 className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-accent-hover transition-colors"
               >
                 Add Student

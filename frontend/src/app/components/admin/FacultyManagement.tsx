@@ -1,56 +1,103 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Search, UserPlus, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { ApiRequestError } from "../../services/api";
+import { createAdminStaff, deleteAdminStaff, fetchAdminStaff } from "../../services/tracsigApi";
+
+type StaffRow = {
+  id: number;
+  name: string;
+  email: string;
+  department: string | null;
+  courses: string[];
+  teaching_load_hours: number | null;
+};
 
 export const FacultyManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddFaculty, setShowAddFaculty] = useState(false);
+  const [facultyMembers, setFacultyMembers] = useState<StaffRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    department: "",
+    teachingLoad: "",
+  });
 
-  const facultyMembers = [
-    {
-      id: 1,
-      name: "Dr. John Doe",
-      email: "john.doe@example.com",
-      department: "Computer Science",
-      courses: ["CS101", "CS201"],
-      teachingLoad: 6,
-    },
-    {
-      id: 2,
-      name: "Dr. Jane Smith",
-      email: "jane.smith@example.com",
-      department: "Information Technology",
-      courses: ["CS301", "CS401"],
-      teachingLoad: 5,
-    },
-    {
-      id: 3,
-      name: "Prof. Michael Brown",
-      email: "michael.brown@example.com",
-      department: "Computer Science",
-      courses: ["CS202", "CS302"],
-      teachingLoad: 7,
-    },
-    {
-      id: 4,
-      name: "Dr. Sarah Wilson",
-      email: "sarah.wilson@example.com",
-      department: "Electronics",
-      courses: ["EC101", "EC201"],
-      teachingLoad: 4,
-    },
-  ];
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetchAdminStaff();
+      setFacultyMembers((res.items as StaffRow[]) ?? []);
+    } catch (e) {
+      if (e instanceof ApiRequestError) toast.error(e.message);
+      else toast.error("Could not load faculty");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const filteredFaculty = facultyMembers.filter(
     (m) =>
       m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       m.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      m.department.toLowerCase().includes(searchTerm.toLowerCase())
+      (m.department ?? "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleDeleteFaculty = (_id: number) => {
-    toast.success("Faculty member removed successfully");
+  const handleDeleteFaculty = async (id: number) => {
+    try {
+      await deleteAdminStaff(id);
+      toast.success("Faculty member removed successfully");
+      await load();
+    } catch (e) {
+      if (e instanceof ApiRequestError) toast.error(e.message);
+      else toast.error("Delete failed");
+    }
   };
+
+  const handleAddFaculty = async () => {
+    if (!form.name.trim() || !form.email.trim() || !form.password) {
+      toast.error("Fill name, email, and password");
+      return;
+    }
+    try {
+      await createAdminStaff({
+        name: form.name.trim(),
+        email: form.email.trim(),
+        password: form.password,
+        department: form.department.trim() || null,
+        teaching_load_hours:
+          form.teachingLoad.trim() !== "" ? Number(form.teachingLoad) : undefined,
+      });
+      toast.success("Faculty member added successfully");
+      setShowAddFaculty(false);
+      setForm({ name: "", email: "", password: "", department: "", teachingLoad: "" });
+      await load();
+    } catch (e) {
+      if (e instanceof ApiRequestError) toast.error(e.message);
+      else toast.error("Could not create faculty");
+    }
+  };
+
+  if (loading && facultyMembers.length === 0) {
+    return (
+      <div className="max-w-7xl mx-auto">
+        <p className="text-muted-foreground">Loading faculty…</p>
+      </div>
+    );
+  }
+
+  const withLoad = facultyMembers.filter((s) => s.teaching_load_hours != null);
+  const avgLoad =
+    withLoad.length > 0
+      ? (withLoad.reduce((acc, s) => acc + (s.teaching_load_hours ?? 0), 0) / withLoad.length).toFixed(1)
+      : "0";
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -105,50 +152,65 @@ export const FacultyManagement = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredFaculty.map((member) => (
-                <tr
-                  key={member.id}
-                  className="border-b border-border hover:bg-muted transition-colors"
-                >
-                  <td className="px-6 py-4 text-foreground" style={{ fontWeight: 600 }}>
-                    {member.name}
-                  </td>
-                  <td className="px-6 py-4 text-muted-foreground">{member.email}</td>
-                  <td className="px-6 py-4 text-muted-foreground">{member.department}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex gap-1">
-                      {member.courses.map((course) => (
-                        <span
-                          key={course}
-                          className="px-2 py-1 bg-primary/10 text-accent-primary rounded text-xs"
-                        >
-                          {course}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-muted-foreground">{member.teachingLoad} hours/week</td>
-                  <td className="px-6 py-4">
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        className="p-2 hover:bg-muted rounded-lg transition-colors"
-                        title="Edit faculty member"
-                      >
-                        <Edit className="w-4 h-4 text-accent-primary" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteFaculty(member.id)}
-                        className="p-2 hover:bg-error/10 rounded-lg transition-colors"
-                        title="Delete faculty member"
-                      >
-                        <Trash2 className="w-4 h-4 text-error" />
-                      </button>
-                    </div>
+              {filteredFaculty.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">
+                    No faculty found.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredFaculty.map((member) => (
+                  <tr
+                    key={member.id}
+                    className="border-b border-border hover:bg-muted transition-colors"
+                  >
+                    <td className="px-6 py-4 text-foreground" style={{ fontWeight: 600 }}>
+                      {member.name}
+                    </td>
+                    <td className="px-6 py-4 text-muted-foreground">{member.email}</td>
+                    <td className="px-6 py-4 text-muted-foreground">{member.department ?? "—"}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex gap-1 flex-wrap">
+                        {member.courses?.length ? (
+                          member.courses.map((course) => (
+                            <span
+                              key={course}
+                              className="px-2 py-1 bg-primary/10 text-accent-primary rounded text-xs"
+                            >
+                              {course}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-muted-foreground text-sm">—</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-muted-foreground">
+                      {member.teaching_load_hours != null ? `${member.teaching_load_hours} hours/week` : "—"}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          className="p-2 hover:bg-muted rounded-lg transition-colors opacity-50 cursor-not-allowed"
+                          disabled
+                          title="Edit not available via API"
+                        >
+                          <Edit className="w-4 h-4 text-accent-primary" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteFaculty(member.id)}
+                          className="p-2 hover:bg-error/10 rounded-lg transition-colors"
+                          title="Delete faculty member"
+                        >
+                          <Trash2 className="w-4 h-4 text-error" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -164,13 +226,13 @@ export const FacultyManagement = () => {
         <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
           <p className="text-muted-foreground mb-2">Average Teaching Load</p>
           <p className="text-3xl text-info" style={{ fontWeight: 700 }}>
-            {(facultyMembers.reduce((acc, s) => acc + s.teachingLoad, 0) / facultyMembers.length).toFixed(1)} hrs
+            {avgLoad} hrs
           </p>
         </div>
         <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
           <p className="text-muted-foreground mb-2">Departments</p>
           <p className="text-3xl text-warning" style={{ fontWeight: 700 }}>
-            {new Set(facultyMembers.map((s) => s.department)).size}
+            {new Set(facultyMembers.map((s) => s.department ?? "")).size}
           </p>
         </div>
       </div>
@@ -186,6 +248,8 @@ export const FacultyManagement = () => {
                 <label className="block mb-2 text-foreground">Full Name</label>
                 <input
                   type="text"
+                  value={form.name}
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                   className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
                   placeholder="Enter name"
                 />
@@ -194,28 +258,42 @@ export const FacultyManagement = () => {
                 <label className="block mb-2 text-foreground">Email</label>
                 <input
                   type="email"
+                  value={form.email}
+                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                   className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
                   placeholder="Enter email"
                 />
               </div>
               <div>
-                <label className="block mb-2 text-foreground">Department</label>
-                <select className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors">
-                  <option value="">Select department</option>
-                  <option value="cs">Computer Science</option>
-                  <option value="it">Information Technology</option>
-                  <option value="ec">Electronics</option>
-                  <option value="me">Mechanical</option>
-                </select>
+                <label className="block mb-2 text-foreground">Password</label>
+                <input
+                  type="password"
+                  value={form.password}
+                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                  className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
+                  placeholder="Min 6 characters"
+                />
               </div>
               <div>
-                <label className="block mb-2 text-foreground">Teaching Load (hours/week)</label>
+                <label className="block mb-2 text-foreground">Department (optional)</label>
+                <input
+                  type="text"
+                  value={form.department}
+                  onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))}
+                  className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
+                  placeholder="Department"
+                />
+              </div>
+              <div>
+                <label className="block mb-2 text-foreground">Teaching Load (hours/week, optional)</label>
                 <input
                   type="number"
                   min="1"
                   max="20"
+                  value={form.teachingLoad}
+                  onChange={(e) => setForm((f) => ({ ...f, teachingLoad: e.target.value }))}
                   className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
-                  placeholder="Enter teaching load"
+                  placeholder="1–20"
                 />
               </div>
             </div>
@@ -229,10 +307,7 @@ export const FacultyManagement = () => {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  toast.success("Faculty member added successfully");
-                  setShowAddFaculty(false);
-                }}
+                onClick={handleAddFaculty}
                 className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-accent-hover transition-colors"
               >
                 Add Faculty

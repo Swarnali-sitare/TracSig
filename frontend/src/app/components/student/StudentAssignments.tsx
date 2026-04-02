@@ -1,15 +1,18 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router";
 import { Search } from "lucide-react";
+import { toast } from "sonner";
 import { useAuth } from "../../context/AuthContext";
-import { getMockStudentAssignments } from "../../data/studentAssignmentsMock";
+import { ApiRequestError } from "../../services/api";
+import { fetchStudentAssignments } from "../../services/tracsigApi";
 import { hasNonEmptyAssignmentDraft } from "../../utils/assignmentDraftStorage";
 import {
   daysFromToday,
   getDisplayStatusBadgeClass,
   getStudentAssignmentDisplayStatus,
-  isDueDatePassed,
 } from "../../utils/assignmentStatus";
+import { apiListRowToStudentAssignment } from "../../utils/studentAssignmentMapper";
+import type { StudentAssignmentRecord } from "../../types/studentAssignment";
 
 export const StudentAssignments = () => {
   const { user } = useAuth();
@@ -21,13 +24,37 @@ export const StudentAssignments = () => {
     return "active";
   }, [location.pathname]);
 
-  const assignments = useMemo(() => getMockStudentAssignments(), []);
+  const [assignments, setAssignments] = useState<StudentAssignmentRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const scope = list === "active" ? "active" : "closed";
+    (async () => {
+      try {
+        const res = await fetchStudentAssignments(scope);
+        if (cancelled) return;
+        const rows = (res.items as Parameters<typeof apiListRowToStudentAssignment>[0][]).map(
+          apiListRowToStudentAssignment
+        );
+        setAssignments(rows);
+      } catch (e) {
+        if (!cancelled) {
+          if (e instanceof ApiRequestError) toast.error(e.message);
+          else toast.error("Could not load assignments");
+          setAssignments([]);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [list]);
 
   const [searchTerm, setSearchTerm] = useState("");
   const filteredAssignments = assignments
-    .filter((a) =>
-      list === "active" ? !isDueDatePassed(a.dueDate) : isDueDatePassed(a.dueDate)
-    )
     .filter(
       (a) =>
         a.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -40,6 +67,14 @@ export const StudentAssignments = () => {
     list === "active"
       ? "Due date has not passed yet — Pending or Completed work."
       : "Due date has passed — Incomplete or Completed work.";
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto">
+        <p className="text-muted-foreground">Loading assignments…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -82,70 +117,78 @@ export const StudentAssignments = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredAssignments.map((assignment) => {
-                const displayStatus = getStudentAssignmentDisplayStatus(assignment);
-                const deltaDays = daysFromToday(assignment.dueDate);
-                const isCompleted = assignment.status === "completed";
-                const hasDraft =
-                  Boolean(user) &&
-                  !isCompleted &&
-                  hasNonEmptyAssignmentDraft(user.id, assignment.id);
+              {filteredAssignments.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">
+                    No assignments in this list.
+                  </td>
+                </tr>
+              ) : (
+                filteredAssignments.map((assignment) => {
+                  const displayStatus = getStudentAssignmentDisplayStatus(assignment);
+                  const deltaDays = daysFromToday(assignment.dueDate);
+                  const isCompleted = assignment.status === "completed";
+                  const hasDraft =
+                    Boolean(user) &&
+                    !isCompleted &&
+                    hasNonEmptyAssignmentDraft(user.id, assignment.id);
 
-                return (
-                  <tr
-                    key={assignment.id}
-                    className="border-b border-border hover:bg-muted transition-colors"
-                  >
-                    <td className="px-6 py-4 text-foreground" style={{ fontWeight: 600 }}>
-                      {assignment.title}
-                    </td>
-                    <td className="px-6 py-4 text-muted-foreground">{assignment.course}</td>
-                    <td className="px-6 py-4">
-                      <div>
-                        <p className="text-foreground">{assignment.dueDate}</p>
-                        {list === "active" && !isCompleted && deltaDays > 0 && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {deltaDays} {deltaDays === 1 ? "day" : "days"} left
-                          </p>
-                        )}
-                        {list === "active" && !isCompleted && deltaDays === 0 && (
-                          <p className="text-xs text-warning mt-1">Due today</p>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span
-                          className={`px-3 py-1 rounded-full text-sm border ${getDisplayStatusBadgeClass(displayStatus)}`}
-                        >
-                          {displayStatus}
-                        </span>
-                        {hasDraft && displayStatus === "Pending" && (
+                  return (
+                    <tr
+                      key={assignment.id}
+                      className="border-b border-border hover:bg-muted transition-colors"
+                    >
+                      <td className="px-6 py-4 text-foreground" style={{ fontWeight: 600 }}>
+                        {assignment.title}
+                      </td>
+                      <td className="px-6 py-4 text-muted-foreground">{assignment.course}</td>
+                      <td className="px-6 py-4">
+                        <div>
+                          <p className="text-foreground">{assignment.dueDate}</p>
+                          {list === "active" && !isCompleted && deltaDays > 0 && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {deltaDays} {deltaDays === 1 ? "day" : "days"} left
+                            </p>
+                          )}
+                          {list === "active" && !isCompleted && deltaDays === 0 && (
+                            <p className="text-xs text-warning mt-1">Due today</p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-wrap items-center gap-2">
                           <span
-                            className="text-xs px-2 py-0.5 rounded-md border border-primary/40 bg-primary/10 text-foreground"
-                            title="Unsubmitted work saved on this device"
+                            className={`px-3 py-1 rounded-full text-sm border ${getDisplayStatusBadgeClass(displayStatus)}`}
                           >
-                            Draft
+                            {displayStatus}
                           </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          navigate(`/student/assignments/${assignment.id}`, {
-                            state: { fromList: list },
-                          })
-                        }
-                        className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-accent-hover transition-colors"
-                      >
-                        {isCompleted ? "View" : "Work"}
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
+                          {hasDraft && displayStatus === "Pending" && (
+                            <span
+                              className="text-xs px-2 py-0.5 rounded-md border border-primary/40 bg-primary/10 text-foreground"
+                              title="Unsubmitted work saved on this device"
+                            >
+                              Draft
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigate(`/student/assignments/${assignment.id}`, {
+                              state: { fromList: list },
+                            })
+                          }
+                          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-accent-hover transition-colors"
+                        >
+                          {isCompleted ? "View" : "Work"}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

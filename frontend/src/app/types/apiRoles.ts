@@ -1,20 +1,16 @@
 /**
- * Backend auth contract (Express `/api/auth`): signup and JWT payloads use
- * `Teacher` | `Student` | `Admin` (see `backend/src/types/index.ts` when present).
- *
- * The SPA uses `student` | `faculty` | `admin` for routes and UI. **Faculty maps to `Teacher`**
- * on the API — the backend role has always been "Teacher", not a separate "Staff" value.
- * Use these helpers at the API boundary so backend validation (`VALID_ROLES`) stays satisfied.
+ * Flask API (`/api/auth`) returns JWT roles `Student` | `Staff` | `Admin` (see `backend/app/auth_jwt.py`).
+ * The SPA uses `student` | `faculty` | `admin` for routes and UI — map at the API boundary with these helpers.
  */
 
-export type BackendUserRole = "Teacher" | "Student" | "Admin";
+export type BackendUserRole = "Student" | "Staff" | "Admin";
 
 export type AppUserRole = "student" | "faculty" | "admin";
 
 export function toBackendRole(role: AppUserRole): BackendUserRole {
   const map: Record<AppUserRole, BackendUserRole> = {
     student: "Student",
-    faculty: "Teacher",
+    faculty: "Staff",
     admin: "Admin",
   };
   return map[role];

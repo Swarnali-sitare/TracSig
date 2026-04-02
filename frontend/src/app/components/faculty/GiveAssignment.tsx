@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { Save, Send, Eye } from "lucide-react";
+import { Send, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { ApiRequestError } from "../../services/api";
+import { createStaffAssignment, fetchStaffCourses } from "../../services/tracsigApi";
 
 export const GiveAssignment = () => {
   const navigate = useNavigate();
@@ -11,15 +13,30 @@ export const GiveAssignment = () => {
     course: "",
     dueDate: "",
   });
+  const [courses, setCourses] = useState<{ id: number; code: string; name: string }[]>([]);
+  const [loadingCourses, setLoadingCourses] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
-  const courses = [
-    { id: "cs101", name: "CS101 - Introduction to Programming" },
-    { id: "cs201", name: "CS201 - Data Structures" },
-    { id: "cs301", name: "CS301 - Web Development" },
-    { id: "cs401", name: "CS401 - Machine Learning" },
-  ];
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetchStaffCourses();
+        if (!cancelled) setCourses(res.items);
+      } catch (e) {
+        if (!cancelled) {
+          if (e instanceof ApiRequestError) toast.error(e.message);
+          else toast.error("Could not load courses");
+        }
+      } finally {
+        if (!cancelled) setLoadingCourses(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({
@@ -31,140 +48,149 @@ export const GiveAssignment = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation
     if (!formData.title || !formData.description || !formData.course || !formData.dueDate) {
       toast.error("Please fill in all required fields");
       return;
     }
 
-    // Check if due date is in the future
     const dueDate = new Date(formData.dueDate);
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     if (dueDate < today) {
-      toast.error("Due date must be in the future");
+      toast.error("Due date must be today or in the future");
       return;
     }
 
     setIsSubmitting(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      await createStaffAssignment({
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        course_id: Number(formData.course),
+        due_date: formData.dueDate,
+      });
+      toast.success("Assignment created successfully!");
+      navigate("/faculty/dashboard");
+    } catch (err) {
+      if (err instanceof ApiRequestError) toast.error(err.message);
+      else toast.error("Could not create assignment");
+    }
     setIsSubmitting(false);
-    toast.success("Assignment created successfully!");
-    navigate("/faculty/dashboard");
   };
 
   const isFormValid = formData.title && formData.description && formData.course && formData.dueDate;
+  const selectedCourse = courses.find((c) => String(c.id) === formData.course);
 
   return (
     <div className="max-w-4xl mx-auto">
       <h1 className="mb-6 text-foreground">Create New Assignment</h1>
 
-      <form onSubmit={handleSubmit}>
-        <div className="bg-card rounded-lg shadow-sm border border-border p-6 mb-6">
-          <div className="space-y-6">
-            {/* Assignment Title */}
-            <div>
-              <label htmlFor="title" className="block mb-2 text-foreground">
-                Assignment Title <span className="text-error">*</span>
-              </label>
-              <input
-                id="title"
-                name="title"
-                type="text"
-                value={formData.title}
-                onChange={handleChange}
-                className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
-                placeholder="Enter assignment title"
-              />
-            </div>
+      {loadingCourses ? (
+        <p className="text-muted-foreground">Loading courses…</p>
+      ) : courses.length === 0 ? (
+        <p className="text-muted-foreground">You have no courses assigned. Contact an administrator.</p>
+      ) : (
+        <form onSubmit={handleSubmit}>
+          <div className="bg-card rounded-lg shadow-sm border border-border p-6 mb-6">
+            <div className="space-y-6">
+              <div>
+                <label htmlFor="title" className="block mb-2 text-foreground">
+                  Assignment Title <span className="text-error">*</span>
+                </label>
+                <input
+                  id="title"
+                  name="title"
+                  type="text"
+                  value={formData.title}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
+                  placeholder="Enter assignment title"
+                />
+              </div>
 
-            {/* Course Selection */}
-            <div>
-              <label htmlFor="course" className="block mb-2 text-foreground">
-                Course <span className="text-error">*</span>
-              </label>
-              <select
-                id="course"
-                name="course"
-                value={formData.course}
-                onChange={handleChange}
-                className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
-              >
-                <option value="">Select a course</option>
-                {courses.map((course) => (
-                  <option key={course.id} value={course.id}>
-                    {course.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+              <div>
+                <label htmlFor="course" className="block mb-2 text-foreground">
+                  Course <span className="text-error">*</span>
+                </label>
+                <select
+                  id="course"
+                  name="course"
+                  value={formData.course}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
+                >
+                  <option value="">Select a course</option>
+                  {courses.map((course) => (
+                    <option key={course.id} value={course.id}>
+                      {course.code} — {course.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            {/* Description */}
-            <div>
-              <label htmlFor="description" className="block mb-2 text-foreground">
-                Description <span className="text-error">*</span>
-              </label>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                rows={8}
-                className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors resize-none"
-                placeholder="Enter assignment description, requirements, and instructions..."
-              />
-            </div>
+              <div>
+                <label htmlFor="description" className="block mb-2 text-foreground">
+                  Description <span className="text-error">*</span>
+                </label>
+                <textarea
+                  id="description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  rows={8}
+                  className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors resize-none"
+                  placeholder="Enter assignment description, requirements, and instructions..."
+                />
+              </div>
 
-            {/* Due Date */}
-            <div>
-              <label htmlFor="dueDate" className="block mb-2 text-foreground">
-                Due Date <span className="text-error">*</span>
-              </label>
-              <input
-                id="dueDate"
-                name="dueDate"
-                type="date"
-                value={formData.dueDate}
-                onChange={handleChange}
-                min={new Date().toISOString().split("T")[0]}
-                className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
-              />
+              <div>
+                <label htmlFor="dueDate" className="block mb-2 text-foreground">
+                  Due Date <span className="text-error">*</span>
+                </label>
+                <input
+                  id="dueDate"
+                  name="dueDate"
+                  type="date"
+                  value={formData.dueDate}
+                  onChange={handleChange}
+                  min={new Date().toISOString().split("T")[0]}
+                  className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
+                />
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Form Actions */}
-        <div className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => navigate("/faculty/dashboard")}
-            className="px-6 py-3 bg-muted text-foreground rounded-lg hover:bg-hover-bg transition-colors"
-          >
-            Cancel
-          </button>
-          <div className="flex gap-3">
+          <div className="flex items-center justify-between">
             <button
               type="button"
-              onClick={() => setShowPreview(true)}
-              disabled={!isFormValid}
-              className="px-6 py-3 bg-muted text-foreground rounded-lg hover:bg-hover-bg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              onClick={() => navigate("/faculty/dashboard")}
+              className="px-6 py-3 bg-muted text-foreground rounded-lg hover:bg-hover-bg transition-colors"
             >
-              <Eye className="w-4 h-4" />
-              Preview
+              Cancel
             </button>
-            <button
-              type="submit"
-              disabled={!isFormValid || isSubmitting}
-              className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              <Send className="w-4 h-4" />
-              {isSubmitting ? "Creating..." : "Create Assignment"}
-            </button>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowPreview(true)}
+                disabled={!isFormValid}
+                className="px-6 py-3 bg-muted text-foreground rounded-lg hover:bg-hover-bg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <Eye className="w-4 h-4" />
+                Preview
+              </button>
+              <button
+                type="submit"
+                disabled={!isFormValid || isSubmitting}
+                className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <Send className="w-4 h-4" />
+                {isSubmitting ? "Creating..." : "Create Assignment"}
+              </button>
+            </div>
           </div>
-        </div>
-      </form>
+        </form>
+      )}
 
-      {/* Preview Modal */}
       {showPreview && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-card rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -176,7 +202,7 @@ export const GiveAssignment = () => {
                 {formData.title || "Untitled Assignment"}
               </h3>
               <p className="text-muted-foreground mb-4">
-                {courses.find((c) => c.id === formData.course)?.name || "No course selected"}
+                {selectedCourse ? `${selectedCourse.code} — ${selectedCourse.name}` : "No course selected"}
               </p>
               <div className="mb-4">
                 <span className="text-sm text-muted-foreground">Due Date: </span>

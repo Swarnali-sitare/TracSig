@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router";
 import { Save, Send, ArrowLeft, Clock, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import { getMockStudentAssignments } from "../../data/studentAssignmentsMock";
 import {
   clearAssignmentDraft,
   loadAssignmentDraft,
@@ -14,6 +13,13 @@ import {
   getStudentAssignmentDisplayStatus,
 } from "../../utils/assignmentStatus";
 import { useAuth } from "../../context/AuthContext";
+import { ApiRequestError } from "../../services/api";
+import {
+  fetchStudentAssignmentDetail,
+  saveStudentDraft,
+  submitStudentAssignment,
+} from "../../services/tracsigApi";
+import type { StudentAssignmentRecord } from "../../types/studentAssignment";
 
 const AUTOSAVE_MS = 2000;
 
@@ -34,36 +40,70 @@ export const AssignmentWork = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [assignment, setAssignment] = useState<StudentAssignmentRecord | null>(null);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [marks, setMarks] = useState<number | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const assignment = useMemo(() => {
-    const list = getMockStudentAssignments();
-    const row = list.find((a) => String(a.id) === id) ?? list[0];
-    return {
-      ...row,
-      description:
-        row.description ??
-        "Follow the course instructions and submit your work before the due date.",
-    };
-  }, [id]);
-
-  const displayStatus = getStudentAssignmentDisplayStatus(assignment);
-  const isSubmitted = assignment.status === "completed";
-  const deltaDays = daysFromToday(assignment.dueDate);
+  const serverDraftSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (!id || isSubmitted) {
-      setDraftHydrated(true);
-      return;
-    }
-    if (!user?.id) return;
-    const existing = loadAssignmentDraft(user.id, id);
-    if (existing?.content) {
-      setSubmissionText(existing.content);
-      setLastSavedAt(new Date(existing.savedAt).getTime());
-    }
-    setDraftHydrated(true);
-  }, [user?.id, id, isSubmitted]);
+    let cancelled = false;
+    (async () => {
+      if (!id) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const detail = await fetchStudentAssignmentDetail(Number(id));
+        if (cancelled) return;
+        const submitted = Boolean(detail.is_submitted);
+        setIsSubmitted(submitted);
+        setMarks(typeof detail.marks === "number" ? detail.marks : null);
+        setFeedback(typeof detail.feedback === "string" ? detail.feedback : null);
+        const row: StudentAssignmentRecord = {
+          id: Number(detail.id),
+          title: String(detail.title),
+          course: String(detail.course_code),
+          dueDate: String(detail.due_date).slice(0, 10),
+          status: detail.record_status === "completed" ? "completed" : "pending",
+          submittedOn: detail.submitted_on ? String(detail.submitted_on).slice(0, 10) : undefined,
+          description: detail.description != null ? String(detail.description) : undefined,
+        };
+        setAssignment(row);
+        const serverContent = typeof detail.content === "string" ? detail.content : "";
+        if (!submitted && user?.id) {
+          const local = loadAssignmentDraft(user.id, id);
+          const merged = serverContent || local?.content || "";
+          setSubmissionText(merged);
+        } else if (submitted) {
+          setSubmissionText(typeof detail.content === "string" ? detail.content : "");
+        } else {
+          setSubmissionText(serverContent);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          if (e instanceof ApiRequestError) toast.error(e.message);
+          else toast.error("Could not load assignment");
+          navigate(assignmentsListPath);
+        }
+      } finally {
+        if (!cancelled) {
+          setDraftHydrated(true);
+          setLoading(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, user?.id, navigate, assignmentsListPath]);
+
+  const displayStatus = assignment
+    ? getStudentAssignmentDisplayStatus(assignment)
+    : "Pending";
+  const deltaDays = assignment ? daysFromToday(assignment.dueDate) : 0;
 
   useEffect(() => {
     if (!draftHydrated || !user?.id || !id || isSubmitted) return;
@@ -77,13 +117,27 @@ export const AssignmentWork = () => {
           setLastSavedAt(null);
         }
       } catch {
-        /* saveAssignmentDraft swallows; quota issues are rare */
+        /* local draft quota */
       }
     }, AUTOSAVE_MS);
     return () => {
       if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
     };
   }, [submissionText, draftHydrated, user?.id, id, isSubmitted]);
+
+  // Debounced server draft sync (API integration)
+  useEffect(() => {
+    if (!draftHydrated || !id || isSubmitted) return;
+    if (serverDraftSaveRef.current) clearTimeout(serverDraftSaveRef.current);
+    serverDraftSaveRef.current = setTimeout(() => {
+      void saveStudentDraft(Number(id), submissionText).catch(() => {
+        /* offline or validation; local draft still works */
+      });
+    }, AUTOSAVE_MS);
+    return () => {
+      if (serverDraftSaveRef.current) clearTimeout(serverDraftSaveRef.current);
+    };
+  }, [submissionText, draftHydrated, id, isSubmitted]);
 
   const handleSaveAsDraft = useCallback(async () => {
     if (!user?.id || !id) {
@@ -92,18 +146,19 @@ export const AssignmentWork = () => {
     }
 
     setIsSaving(true);
-    await new Promise((r) => setTimeout(r, 300));
     try {
+      await saveStudentDraft(Number(id), submissionText);
       saveAssignmentDraft(user.id, id, submissionText);
       if (submissionText.trim().length === 0) {
         setLastSavedAt(null);
-        toast.success("Draft cleared from this device.");
+        toast.success("Draft cleared from this device and server.");
       } else {
         setLastSavedAt(Date.now());
-        toast.success("Draft saved — Pending until you submit. You can resume anytime.");
+        toast.success("Draft saved — Pending until you submit.");
       }
-    } catch {
-      toast.error("Could not save draft. Try again or check browser storage.");
+    } catch (e) {
+      if (e instanceof ApiRequestError) toast.error(e.message);
+      else toast.error("Could not save draft.");
     }
     setIsSaving(false);
   }, [user?.id, id, submissionText]);
@@ -113,22 +168,36 @@ export const AssignmentWork = () => {
       toast.error("Please enter your submission");
       return;
     }
+    if (!id) return;
 
     setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsSubmitting(false);
-    setShowConfirmation(false);
-    if (user?.id && id) {
-      clearAssignmentDraft(user.id, id);
+    try {
+      await submitStudentAssignment(Number(id), submissionText);
+      if (user?.id && id) {
+        clearAssignmentDraft(user.id, id);
+      }
+      toast.success("Assignment submitted successfully!");
+      setShowConfirmation(false);
+      navigate(assignmentsListPath);
+    } catch (e) {
+      if (e instanceof ApiRequestError) toast.error(e.message);
+      else toast.error("Submit failed.");
     }
-    toast.success("Assignment submitted successfully!");
-    navigate(assignmentsListPath);
+    setIsSubmitting(false);
   };
 
   const lastSavedLabel =
     lastSavedAt !== null
       ? `Last saved ${new Date(lastSavedAt).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" })}`
       : null;
+
+  if (loading || !assignment) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <p className="text-muted-foreground">Loading assignment…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -199,7 +268,7 @@ export const AssignmentWork = () => {
             <div className="flex flex-col items-end gap-1 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <div className="h-2 w-2 animate-pulse rounded-full bg-success" />
-                <span>Autosave to this device ({Math.round(AUTOSAVE_MS / 1000)}s)</span>
+                <span>Autosave to device &amp; server ({Math.round(AUTOSAVE_MS / 1000)}s)</span>
               </div>
               {lastSavedLabel && <span className="text-xs">{lastSavedLabel}</span>}
             </div>
@@ -207,10 +276,25 @@ export const AssignmentWork = () => {
         </div>
 
         {isSubmitted ? (
-          <p className="text-muted-foreground py-8 border border-border rounded-lg px-4 bg-muted/50">
-            This assignment is marked as submitted. You can review your grade or feedback from your instructor when
-            available.
-          </p>
+          <div className="space-y-4">
+            <p className="text-muted-foreground py-4 border border-border rounded-lg px-4 bg-muted/50 whitespace-pre-wrap">
+              {submissionText || "—"}
+            </p>
+            {(marks != null || feedback) && (
+              <div className="rounded-lg border border-border bg-muted/50 p-4">
+                {marks != null && (
+                  <p className="text-foreground">
+                    <span className="font-semibold">Marks:</span> {marks}/100
+                  </p>
+                )}
+                {feedback && (
+                  <p className="text-muted-foreground mt-2 whitespace-pre-wrap">
+                    <span className="font-semibold text-foreground">Feedback:</span> {feedback}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         ) : (
           <>
             {displayStatus === "Incomplete" && (
@@ -219,8 +303,8 @@ export const AssignmentWork = () => {
               </p>
             )}
             <p className="mb-3 text-xs text-muted-foreground">
-              Drafts stay in <strong>Pending</strong> until you submit. They are stored on this browser for your account
-              only.
+              Drafts stay in <strong>Pending</strong> until you submit. Local and server drafts are kept in sync when
+              online.
             </p>
             <textarea
               value={submissionText}

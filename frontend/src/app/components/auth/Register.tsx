@@ -1,18 +1,30 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router";
 import { useAuth, UserRole } from "../../context/AuthContext";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { ApiRequestError } from "../../services/api";
+import { fetchPublicBatches, type PublicBatch } from "../../services/tracsigApi";
 
 export const Register = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<UserRole>("student");
+  const [batchId, setBatchId] = useState<number | "">("");
+  const [department, setDepartment] = useState("");
+  const [teachingLoad, setTeachingLoad] = useState("");
+  const [batches, setBatches] = useState<PublicBatch[]>([]);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    void fetchPublicBatches()
+      .then((r) => setBatches(r.items))
+      .catch(() => setBatches([]));
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,13 +39,31 @@ export const Register = () => {
       return;
     }
 
+    if (role === "student" && batchId === "") {
+      toast.error("Please select a batch");
+      return;
+    }
+
     setIsLoading(true);
     try {
-      await register(name, email, password, role);
+      const u = await register(name, email, password, role, {
+        batchId: role === "student" ? Number(batchId) : undefined,
+        department: role === "faculty" ? (department.trim() || null) : undefined,
+        teachingLoadHours:
+          role === "faculty" && teachingLoad.trim() !== "" ? Number(teachingLoad) : undefined,
+      });
       toast.success("Registration successful!");
-      navigate(`/${role}/dashboard`);
-    } catch {
-      toast.error("Registration failed. Please try again.");
+      const path =
+        u.role === "faculty" ? "/faculty/dashboard" : u.role === "admin" ? "/admin/dashboard" : "/student/dashboard";
+      navigate(path);
+    } catch (err) {
+      if (err instanceof ApiRequestError) {
+        toast.error(err.message);
+      } else if (err instanceof Error) {
+        toast.error(err.message);
+      } else {
+        toast.error("Registration failed. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -114,6 +144,64 @@ export const Register = () => {
             <option value="faculty">Faculty</option>
           </select>
         </div>
+
+        {role === "student" && (
+          <div>
+            <label htmlFor="batch" className="mb-2 block text-foreground">
+              Batch <span className="text-error">*</span>
+            </label>
+            <select
+              id="batch"
+              value={batchId}
+              onChange={(e) => setBatchId(e.target.value === "" ? "" : Number(e.target.value))}
+              className="w-full rounded-lg border border-border bg-input-background px-4 py-3 text-foreground transition-colors focus:border-primary focus:outline-none"
+              disabled={isLoading}
+              required
+            >
+              <option value="">Select batch</option>
+              {batches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name} ({b.year_label})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {role === "faculty" && (
+          <>
+            <div>
+              <label htmlFor="department" className="mb-2 block text-foreground">
+                Department (optional)
+              </label>
+              <input
+                id="department"
+                type="text"
+                value={department}
+                onChange={(e) => setDepartment(e.target.value)}
+                className="w-full rounded-lg border border-border bg-input-background px-4 py-3 text-foreground transition-colors focus:border-primary focus:outline-none"
+                placeholder="e.g. Computer Science"
+                disabled={isLoading}
+              />
+            </div>
+            <div>
+              <label htmlFor="teachingLoad" className="mb-2 block text-foreground">
+                Teaching load hours/week (optional)
+              </label>
+              <input
+                id="teachingLoad"
+                type="number"
+                min={1}
+                max={20}
+                value={teachingLoad}
+                onChange={(e) => setTeachingLoad(e.target.value)}
+                className="w-full rounded-lg border border-border bg-input-background px-4 py-3 text-foreground transition-colors focus:border-primary focus:outline-none"
+                placeholder="e.g. 6"
+                disabled={isLoading}
+              />
+            </div>
+          </>
+        )}
 
         <button
           type="submit"

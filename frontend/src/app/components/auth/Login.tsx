@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router";
 import { useAuth } from "../../context/AuthContext";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { ApiRequestError } from "../../services/api";
 
 export const Login = () => {
   const [email, setEmail] = useState("");
@@ -22,18 +23,17 @@ export const Login = () => {
 
     setIsLoading(true);
     try {
-      let role: "student" | "faculty" | "admin" = "student";
-      if (email.includes("faculty") || email.includes("staff")) {
-        role = "faculty";
-      } else if (email.includes("admin")) {
-        role = "admin";
-      }
-
-      await login(email, password, role);
+      const u = await login(email, password);
       toast.success("Login successful!");
-      navigate(`/${role}/dashboard`);
-    } catch {
-      toast.error("Login failed. Please try again.");
+      const path =
+        u.role === "faculty" ? "/faculty/dashboard" : u.role === "admin" ? "/admin/dashboard" : "/student/dashboard";
+      navigate(path);
+    } catch (err) {
+      if (err instanceof ApiRequestError) {
+        toast.error(err.message);
+      } else {
+        toast.error("Login failed. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -104,12 +104,11 @@ export const Login = () => {
       </div>
 
       <div className="mt-8 rounded-lg border border-border bg-muted p-4">
-        <p className="mb-2 text-sm font-medium text-accent-primary">Demo Login Credentials:</p>
+        <p className="mb-2 text-sm font-medium text-accent-primary">Demo credentials (after `flask seed-demo`):</p>
         <ul className="space-y-1 text-xs text-muted-foreground">
-          <li>Student: student@example.com</li>
-          <li>Faculty: faculty@example.com (or staff@example.com)</li>
-          <li>Admin: admin@example.com</li>
-          <li>Password: any password</li>
+          <li>Student: student@example.com / student123</li>
+          <li>Faculty: faculty@example.com / faculty123</li>
+          <li>Admin: admin@example.com / admin123</li>
         </ul>
       </div>
     </div>

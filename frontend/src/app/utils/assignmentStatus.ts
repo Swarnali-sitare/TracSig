@@ -67,3 +67,20 @@ export function getDisplayStatusBadgeClass(status: StudentAssignmentDisplayStatu
       return "bg-muted text-muted-foreground border-border";
   }
 }
+
+/** Aggregate counts using the same Pending / Completed / Incomplete rules as the list. */
+export function countAssignmentStats(
+  assignments: { dueDate: string; status: SubmissionRecordStatus }[]
+) {
+  const total = assignments.length;
+  let completed = 0;
+  let pending = 0;
+  let incomplete = 0;
+  for (const a of assignments) {
+    const d = getStudentAssignmentDisplayStatus(a);
+    if (d === "Completed") completed += 1;
+    else if (d === "Pending") pending += 1;
+    else incomplete += 1;
+  }
+  return { total, completed, pending, incomplete };
+}

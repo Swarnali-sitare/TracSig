@@ -14,6 +14,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
   const {
     notifications,
     unreadCount,
+    isLoading: notificationsLoading,
     markAsRead,
     markAllAsRead,
     clearNotification,
@@ -88,7 +89,9 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                   </div>
                 </div>
                 <div className="max-h-96 overflow-y-auto">
-                  {notifications.length === 0 ? (
+                  {notificationsLoading ? (
+                    <div className="p-8 text-center text-sm text-muted-foreground">Loading…</div>
+                  ) : notifications.length === 0 ? (
                     <div className="p-8 text-center text-sm text-muted-foreground">
                       No notifications
                     </div>

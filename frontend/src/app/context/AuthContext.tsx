@@ -1,7 +1,15 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { useNavigate } from "react-router";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { fromBackendRole } from "../types/apiRoles";
+import { clearStoredTokens, getStoredRefreshToken, setStoredTokens } from "../services/api";
+import {
+  fetchMe,
+  loginRequest,
+  logoutRequest,
+  registerRequest,
+  type AuthMe,
+} from "../services/tracsigApi";
 
-/** App / URL role. Backend API uses Teacher | Student | Admin — map with `toBackendRole` in `types/apiRoles.ts` when calling `/api/auth`. */
+/** App / URL role. Backend returns Student | Staff | Admin — map with `fromBackendRole`. */
 export type UserRole = "student" | "faculty" | "admin";
 
 export interface User {
@@ -9,14 +17,38 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
+  department?: string | null;
+  batchId?: number | null;
+  batchLabel?: string | null;
 }
+
+function meToUser(m: AuthMe): User {
+  return {
+    id: String(m.id),
+    name: m.name,
+    email: m.email,
+    role: fromBackendRole(m.role),
+    department: m.department,
+    batchId: m.batch_id,
+    batchLabel: m.batch_label,
+  };
+}
+
+const USER_KEY = "tracsig_user";
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string, role?: UserRole) => Promise<void>;
-  register: (name: string, email: string, password: string, role: UserRole) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
+  register: (
+    name: string,
+    email: string,
+    password: string,
+    role: UserRole,
+    options?: { batchId?: number; department?: string | null; teachingLoadHours?: number | null }
+  ) => Promise<User>;
   logout: () => void;
   isLoading: boolean;
+  refreshUser: () => Promise<User | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,63 +57,112 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    // Check for stored user on mount
-    const storedUser = localStorage.getItem("tracsig_user");
-    if (storedUser) {
-      const parsed = JSON.parse(storedUser) as User;
-      const raw = parsed as unknown as { role: string };
-      if (raw.role === "staff") {
-        parsed.role = "faculty";
-        localStorage.setItem("tracsig_user", JSON.stringify(parsed));
-      }
-      setUser(parsed);
-    }
-    setIsLoading(false);
+  const refreshUser = useCallback(async (): Promise<User | null> => {
+    const me = await fetchMe();
+    const u = meToUser(me);
+    setUser(u);
+    localStorage.setItem(USER_KEY, JSON.stringify(u));
+    return u;
   }, []);
 
-  const login = async (email: string, password: string, role?: UserRole) => {
-    setIsLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    // Mock user - in real app this would come from API
-    const mockUser: User = {
-      id: "1",
-      name: email.split("@")[0],
-      email,
-      role: role || "student",
+  useEffect(() => {
+    const run = async () => {
+      const stored = localStorage.getItem(USER_KEY);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored) as User;
+          const raw = parsed as unknown as { role: string };
+          if (raw.role === "staff") {
+            parsed.role = "faculty";
+            localStorage.setItem(USER_KEY, JSON.stringify(parsed));
+          }
+          setUser(parsed);
+        } catch {
+          localStorage.removeItem(USER_KEY);
+        }
+      }
+      const token = localStorage.getItem("tracsig_access_token");
+      if (!token) {
+        setUser(null);
+        localStorage.removeItem(USER_KEY);
+        setIsLoading(false);
+        return;
+      }
+      try {
+        await refreshUser();
+      } catch {
+        clearStoredTokens();
+        setUser(null);
+        localStorage.removeItem(USER_KEY);
+      } finally {
+        setIsLoading(false);
+      }
     };
+    void run();
+  }, [refreshUser]);
 
-    setUser(mockUser);
-    localStorage.setItem("tracsig_user", JSON.stringify(mockUser));
-    setIsLoading(false);
+  const login = async (email: string, password: string): Promise<User> => {
+    setIsLoading(true);
+    try {
+      const data = await loginRequest(email, password);
+      setStoredTokens(data.access_token, data.refresh_token);
+      const u = await refreshUser();
+      if (!u) {
+        throw new Error("Failed to load profile");
+      }
+      return u;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const register = async (name: string, email: string, password: string, role: UserRole) => {
+  const register = async (
+    name: string,
+    email: string,
+    password: string,
+    role: UserRole,
+    options?: { batchId?: number; department?: string | null; teachingLoadHours?: number | null }
+  ): Promise<User> => {
     setIsLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    const newUser: User = {
-      id: Math.random().toString(36).substr(2, 9),
-      name,
-      email,
-      role,
-    };
-
-    setUser(newUser);
-    localStorage.setItem("tracsig_user", JSON.stringify(newUser));
-    setIsLoading(false);
+    try {
+      const apiRole = role === "faculty" ? "Staff" : "Student";
+      const body: Parameters<typeof registerRequest>[0] = {
+        name,
+        email,
+        password,
+        role: apiRole,
+      };
+      if (apiRole === "Student") {
+        if (options?.batchId == null) {
+          throw new Error("batch_id is required for students");
+        }
+        body.batch_id = options.batchId;
+      } else {
+        body.department = options?.department ?? undefined;
+        body.teaching_load_hours = options?.teachingLoadHours ?? undefined;
+      }
+      const data = await registerRequest(body);
+      setStoredTokens(data.access_token, data.refresh_token);
+      const u = await refreshUser();
+      if (!u) {
+        throw new Error("Failed to load profile");
+      }
+      return u;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const logout = () => {
+    const rt = getStoredRefreshToken();
+    void logoutRequest(rt);
+    clearStoredTokens();
     setUser(null);
-    localStorage.removeItem("tracsig_user");
+    localStorage.removeItem(USER_KEY);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, isLoading, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

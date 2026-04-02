@@ -1,0 +1,255 @@
+/**
+ * Typed wrappers for TracSig REST endpoints (see backend `app/routes/`).
+ */
+
+import { apiRequest } from "./api";
+
+// ——— Auth ———
+
+export type AuthUserPublic = {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+};
+
+export type AuthMe = AuthUserPublic & {
+  department: string | null;
+  batch_id: number | null;
+  batch_label: string | null;
+};
+
+export async function loginRequest(email: string, password: string) {
+  return apiRequest<{
+    user: AuthUserPublic;
+    access_token: string;
+    refresh_token: string;
+    expires_in: number;
+  }>("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+}
+
+export async function registerRequest(body: {
+  name: string;
+  email: string;
+  password: string;
+  role: "Student" | "Staff";
+  batch_id?: number;
+  department?: string | null;
+  teaching_load_hours?: number | null;
+}) {
+  return apiRequest<{
+    user: AuthUserPublic;
+    access_token: string;
+    refresh_token: string;
+    expires_in: number;
+  }>("/api/auth/register", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function logoutRequest(refreshToken: string | null) {
+  if (!refreshToken) return;
+  try {
+    await apiRequest("/api/auth/logout", {
+      method: "POST",
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+  } catch {
+    /* best-effort */
+  }
+}
+
+export async function fetchMe() {
+  return apiRequest<AuthMe>("/api/auth/me");
+}
+
+export type PublicBatch = { id: number; name: string; year_label: string };
+
+export async function fetchPublicBatches() {
+  return apiRequest<{ items: PublicBatch[] }>("/api/auth/batches");
+}
+
+// ——— Notifications ———
+
+export type NotificationDto = {
+  id: number;
+  type: string;
+  title: string;
+  message: string;
+  icon_key: string;
+  is_read: boolean;
+  created_at: string | null;
+};
+
+export async function fetchNotifications(unreadOnly?: boolean) {
+  const q = unreadOnly ? "?unread_only=true" : "";
+  return apiRequest<{ items: NotificationDto[] }>(`/api/notifications${q}`);
+}
+
+export async function markNotificationRead(id: number) {
+  return apiRequest<{ ok: boolean }>(`/api/notifications/${id}/read`, { method: "PATCH" });
+}
+
+export async function markAllNotificationsRead() {
+  return apiRequest<{ ok: boolean }>("/api/notifications/read-all", { method: "PATCH" });
+}
+
+export async function deleteNotification(id: number) {
+  await apiRequest(`/api/notifications/${id}`, { method: "DELETE" });
+}
+
+export async function deleteAllNotifications() {
+  await apiRequest("/api/notifications", { method: "DELETE" });
+}
+
+// ——— Student ———
+
+export async function fetchStudentDashboard() {
+  return apiRequest<Record<string, unknown>>("/api/student/dashboard");
+}
+
+export async function fetchStudentAssignments(scope: "active" | "closed" | "all" = "active") {
+  return apiRequest<{ items: unknown[] }>(`/api/student/assignments?scope=${scope}`);
+}
+
+export async function fetchStudentAssignmentDetail(id: number) {
+  return apiRequest<Record<string, unknown>>(`/api/student/assignments/${id}`);
+}
+
+export async function saveStudentDraft(assignmentId: number, content: string) {
+  return apiRequest<{ ok: boolean }>(`/api/student/assignments/${assignmentId}/draft`, {
+    method: "POST",
+    body: JSON.stringify({ content }),
+  });
+}
+
+export async function submitStudentAssignment(assignmentId: number, content: string) {
+  return apiRequest<{ ok: boolean }>(`/api/student/assignments/${assignmentId}/submit`, {
+    method: "POST",
+    body: JSON.stringify({ content }),
+  });
+}
+
+// ——— Staff ———
+
+export async function fetchStaffDashboard() {
+  return apiRequest<Record<string, unknown>>("/api/staff/dashboard");
+}
+
+export async function fetchStaffCourses() {
+  return apiRequest<{ items: { id: number; code: string; name: string }[] }>("/api/staff/courses");
+}
+
+export async function createStaffAssignment(body: {
+  title: string;
+  description: string;
+  course_id: number;
+  due_date: string;
+}) {
+  return apiRequest<{ id: number }>("/api/staff/assignments", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function fetchStaffSubmissions() {
+  return apiRequest<{ items: unknown[] }>("/api/staff/submissions");
+}
+
+export async function evaluateSubmission(
+  submissionId: number,
+  body: { marks: number; feedback: string }
+) {
+  return apiRequest<{ ok: boolean }>(`/api/staff/submissions/${submissionId}/evaluate`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function fetchStaffStudentProgress(course?: string) {
+  const q = course && course !== "all" ? `?course=${encodeURIComponent(course)}` : "";
+  return apiRequest<{ items: unknown[]; summary: Record<string, number> }>(
+    `/api/staff/students/progress${q}`
+  );
+}
+
+// ——— Admin ———
+
+export async function fetchAdminDashboard() {
+  return apiRequest<Record<string, unknown>>("/api/admin/dashboard");
+}
+
+export async function fetchAdminStudents(params: { batch?: string; search?: string }) {
+  const sp = new URLSearchParams();
+  if (params.batch && params.batch !== "all") sp.set("batch", params.batch);
+  if (params.search) sp.set("search", params.search);
+  const q = sp.toString();
+  return apiRequest<{ items: unknown[] }>(`/api/admin/students${q ? `?${q}` : ""}`);
+}
+
+export async function createAdminStudent(body: {
+  name: string;
+  email: string;
+  password: string;
+  batch_id: number;
+  department?: string | null;
+}) {
+  return apiRequest<{ id: number }>("/api/admin/students", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deleteAdminStudent(id: number) {
+  await apiRequest(`/api/admin/students/${id}`, { method: "DELETE" });
+}
+
+export async function fetchAdminStaff() {
+  return apiRequest<{ items: unknown[] }>("/api/admin/staff");
+}
+
+export async function createAdminStaff(body: {
+  name: string;
+  email: string;
+  password: string;
+  department?: string | null;
+  teaching_load_hours?: number | null;
+}) {
+  return apiRequest<{ id: number }>("/api/admin/staff", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deleteAdminStaff(id: number) {
+  await apiRequest(`/api/admin/staff/${id}`, { method: "DELETE" });
+}
+
+export async function fetchAdminCourses() {
+  return apiRequest<{ items: unknown[] }>("/api/admin/courses");
+}
+
+export async function createAdminCourse(body: {
+  code: string;
+  name: string;
+  department: string;
+  credits: number;
+  staff_id: number;
+}) {
+  return apiRequest<{ id: number }>("/api/admin/courses", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deleteAdminCourse(id: number) {
+  await apiRequest(`/api/admin/courses/${id}`, { method: "DELETE" });
+}
+
+export async function fetchAdminBatches() {
+  return apiRequest<{ items: { id: number; name: string; year_label: string }[] }>("/api/admin/batches");
+}

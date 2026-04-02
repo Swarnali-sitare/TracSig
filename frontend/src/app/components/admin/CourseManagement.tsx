@@ -1,58 +1,59 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Search, Plus, Edit, Trash2, BookOpen } from "lucide-react";
 import { toast } from "sonner";
+import { ApiRequestError } from "../../services/api";
+import {
+  createAdminCourse,
+  deleteAdminCourse,
+  fetchAdminCourses,
+  fetchAdminStaff,
+} from "../../services/tracsigApi";
+
+type CourseRow = {
+  id: number;
+  code: string;
+  name: string;
+  department: string;
+  credits: number;
+  enrolled_students: number;
+  instructor_name: string;
+  instructor_id: number;
+};
+
+type StaffOption = { id: number; name: string; email: string };
 
 export const CourseManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddCourse, setShowAddCourse] = useState(false);
+  const [courses, setCourses] = useState<CourseRow[]>([]);
+  const [staffList, setStaffList] = useState<StaffOption[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState({
+    code: "",
+    name: "",
+    department: "",
+    credits: "4",
+    staff_id: "",
+  });
 
-  const courses = [
-    {
-      id: 1,
-      code: "CS101",
-      name: "Introduction to Programming",
-      department: "Computer Science",
-      credits: 4,
-      students: 156,
-      instructor: "Dr. John Doe",
-    },
-    {
-      id: 2,
-      code: "CS201",
-      name: "Data Structures",
-      department: "Computer Science",
-      credits: 4,
-      students: 142,
-      instructor: "Dr. John Doe",
-    },
-    {
-      id: 3,
-      code: "CS301",
-      name: "Web Development",
-      department: "Computer Science",
-      credits: 3,
-      students: 128,
-      instructor: "Dr. Jane Smith",
-    },
-    {
-      id: 4,
-      code: "CS401",
-      name: "Machine Learning",
-      department: "Computer Science",
-      credits: 4,
-      students: 98,
-      instructor: "Dr. Jane Smith",
-    },
-    {
-      id: 5,
-      code: "IT201",
-      name: "Database Systems",
-      department: "Information Technology",
-      credits: 4,
-      students: 134,
-      instructor: "Prof. Michael Brown",
-    },
-  ];
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [cRes, sRes] = await Promise.all([fetchAdminCourses(), fetchAdminStaff()]);
+      setCourses((cRes.items as CourseRow[]) ?? []);
+      const items = (sRes.items as { id: number; name: string; email: string }[]) ?? [];
+      setStaffList(items.map((s) => ({ id: s.id, name: s.name, email: s.email })));
+    } catch (e) {
+      if (e instanceof ApiRequestError) toast.error(e.message);
+      else toast.error("Could not load data");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const filteredCourses = courses.filter(
     (c) =>
@@ -61,9 +62,55 @@ export const CourseManagement = () => {
       c.department.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleDeleteCourse = (id: number) => {
-    toast.success("Course deleted successfully");
+  const handleDeleteCourse = async (id: number) => {
+    try {
+      await deleteAdminCourse(id);
+      toast.success("Course deleted successfully");
+      await load();
+    } catch (e) {
+      if (e instanceof ApiRequestError) toast.error(e.message);
+      else toast.error("Delete failed");
+    }
   };
+
+  const handleAddCourse = async () => {
+    if (!form.code.trim() || !form.name.trim() || !form.department.trim() || !form.staff_id) {
+      toast.error("Fill all required fields");
+      return;
+    }
+    const cr = Number(form.credits);
+    if (Number.isNaN(cr) || cr < 1 || cr > 6) {
+      toast.error("Credits must be 1–6");
+      return;
+    }
+    try {
+      await createAdminCourse({
+        code: form.code.trim(),
+        name: form.name.trim(),
+        department: form.department.trim(),
+        credits: cr,
+        staff_id: Number(form.staff_id),
+      });
+      toast.success("Course added successfully");
+      setShowAddCourse(false);
+      setForm({ code: "", name: "", department: "", credits: "4", staff_id: "" });
+      await load();
+    } catch (e) {
+      if (e instanceof ApiRequestError) toast.error(e.message);
+      else toast.error("Could not create course");
+    }
+  };
+
+  const totalStudents = courses.reduce((acc, c) => acc + c.enrolled_students, 0);
+  const totalCredits = courses.reduce((acc, c) => acc + c.credits, 0);
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto">
+        <p className="text-muted-foreground">Loading courses…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -78,7 +125,6 @@ export const CourseManagement = () => {
         </button>
       </div>
 
-      {/* Search */}
       <div className="bg-card rounded-lg p-6 shadow-sm border border-border mb-6">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -92,7 +138,6 @@ export const CourseManagement = () => {
         </div>
       </div>
 
-      {/* Courses Table */}
       <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -122,48 +167,57 @@ export const CourseManagement = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredCourses.map((course) => (
-                <tr
-                  key={course.id}
-                  className="border-b border-border hover:bg-muted transition-colors"
-                >
-                  <td className="px-6 py-4">
-                    <span className="px-3 py-1 bg-primary/10 text-accent-primary rounded-full">
-                      {course.code}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-foreground" style={{ fontWeight: 600 }}>
-                    {course.name}
-                  </td>
-                  <td className="px-6 py-4 text-muted-foreground">{course.department}</td>
-                  <td className="px-6 py-4 text-muted-foreground">{course.credits}</td>
-                  <td className="px-6 py-4 text-muted-foreground">{course.students}</td>
-                  <td className="px-6 py-4 text-muted-foreground">{course.instructor}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex gap-2">
-                      <button
-                        className="p-2 hover:bg-muted rounded-lg transition-colors"
-                        title="Edit course"
-                      >
-                        <Edit className="w-4 h-4 text-accent-primary" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteCourse(course.id)}
-                        className="p-2 hover:bg-error/10 rounded-lg transition-colors"
-                        title="Delete course"
-                      >
-                        <Trash2 className="w-4 h-4 text-error" />
-                      </button>
-                    </div>
+              {filteredCourses.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-8 text-center text-muted-foreground">
+                    No courses found.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredCourses.map((course) => (
+                  <tr
+                    key={course.id}
+                    className="border-b border-border hover:bg-muted transition-colors"
+                  >
+                    <td className="px-6 py-4">
+                      <span className="px-3 py-1 bg-primary/10 text-accent-primary rounded-full">
+                        {course.code}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-foreground" style={{ fontWeight: 600 }}>
+                      {course.name}
+                    </td>
+                    <td className="px-6 py-4 text-muted-foreground">{course.department}</td>
+                    <td className="px-6 py-4 text-muted-foreground">{course.credits}</td>
+                    <td className="px-6 py-4 text-muted-foreground">{course.enrolled_students}</td>
+                    <td className="px-6 py-4 text-muted-foreground">{course.instructor_name}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          className="p-2 hover:bg-muted rounded-lg transition-colors opacity-50 cursor-not-allowed"
+                          title="Edit not available via API"
+                          disabled
+                        >
+                          <Edit className="w-4 h-4 text-accent-primary" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCourse(course.id)}
+                          className="p-2 hover:bg-error/10 rounded-lg transition-colors"
+                          title="Delete course"
+                        >
+                          <Trash2 className="w-4 h-4 text-error" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
         <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
           <div className="flex items-center gap-3 mb-2">
@@ -175,26 +229,25 @@ export const CourseManagement = () => {
           </p>
         </div>
         <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
-          <p className="text-muted-foreground mb-2">Total Students</p>
+          <p className="text-muted-foreground mb-2">Enrolled (sum)</p>
           <p className="text-3xl text-info" style={{ fontWeight: 700 }}>
-            {courses.reduce((acc, c) => acc + c.students, 0)}
+            {totalStudents}
           </p>
         </div>
         <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
           <p className="text-muted-foreground mb-2">Avg. Students/Course</p>
           <p className="text-3xl text-warning" style={{ fontWeight: 700 }}>
-            {Math.round(courses.reduce((acc, c) => acc + c.students, 0) / courses.length)}
+            {courses.length ? Math.round(totalStudents / courses.length) : 0}
           </p>
         </div>
         <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
           <p className="text-muted-foreground mb-2">Total Credits</p>
           <p className="text-3xl text-accent-primary" style={{ fontWeight: 700 }}>
-            {courses.reduce((acc, c) => acc + c.credits, 0)}
+            {totalCredits}
           </p>
         </div>
       </div>
 
-      {/* Add Course Modal */}
       {showAddCourse && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-card rounded-lg max-w-md w-full">
@@ -206,6 +259,8 @@ export const CourseManagement = () => {
                 <label className="block mb-2 text-foreground">Course Code</label>
                 <input
                   type="text"
+                  value={form.code}
+                  onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
                   className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
                   placeholder="e.g., CS101"
                 />
@@ -214,37 +269,46 @@ export const CourseManagement = () => {
                 <label className="block mb-2 text-foreground">Course Name</label>
                 <input
                   type="text"
+                  value={form.name}
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                   className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
                   placeholder="Enter course name"
                 />
               </div>
               <div>
                 <label className="block mb-2 text-foreground">Department</label>
-                <select className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors">
-                  <option value="">Select department</option>
-                  <option value="cs">Computer Science</option>
-                  <option value="it">Information Technology</option>
-                  <option value="ec">Electronics</option>
-                  <option value="me">Mechanical</option>
-                </select>
+                <input
+                  type="text"
+                  value={form.department}
+                  onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))}
+                  className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
+                  placeholder="Department"
+                />
               </div>
               <div>
-                <label className="block mb-2 text-foreground">Credits</label>
+                <label className="block mb-2 text-foreground">Credits (1–6)</label>
                 <input
                   type="number"
                   min="1"
                   max="6"
+                  value={form.credits}
+                  onChange={(e) => setForm((f) => ({ ...f, credits: e.target.value }))}
                   className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
-                  placeholder="Enter credits"
                 />
               </div>
               <div>
                 <label className="block mb-2 text-foreground">Instructor</label>
-                <select className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors">
+                <select
+                  value={form.staff_id}
+                  onChange={(e) => setForm((f) => ({ ...f, staff_id: e.target.value }))}
+                  className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
+                >
                   <option value="">Select instructor</option>
-                  <option value="1">Dr. John Doe</option>
-                  <option value="2">Dr. Jane Smith</option>
-                  <option value="3">Prof. Michael Brown</option>
+                  {staffList.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.email})
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -256,10 +320,7 @@ export const CourseManagement = () => {
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  toast.success("Course added successfully");
-                  setShowAddCourse(false);
-                }}
+                onClick={handleAddCourse}
                 className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-accent-hover transition-colors"
               >
                 Add Course
