@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Users, UserCheck, FileText, BookOpen } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
+import { RechartsBarHoverCursor } from "../charts";
 import { toast } from "sonner";
 import { ApiRequestError } from "../../services/api";
 import { fetchAdminDashboard } from "../../services/tracsigApi";
@@ -124,7 +125,7 @@ export const AdminDashboard = () => {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
                 <XAxis dataKey="month" stroke="var(--text-secondary)" />
                 <YAxis stroke="var(--text-secondary)" />
-                <Tooltip />
+                <Tooltip cursor={<RechartsBarHoverCursor />} />
                 <Bar dataKey="assignments" fill="var(--accent-primary)" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>

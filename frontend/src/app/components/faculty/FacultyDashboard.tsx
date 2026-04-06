@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { FileText, Users, CheckCircle, TrendingUp } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
+import { RechartsBarHoverCursor } from "../charts";
 import { toast } from "sonner";
 import { ApiRequestError } from "../../services/api";
 import { fetchStaffDashboard } from "../../services/tracsigApi";
@@ -165,7 +166,7 @@ export const FacultyDashboard = () => {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
                 <XAxis dataKey="course" stroke="var(--text-secondary)" />
                 <YAxis stroke="var(--text-secondary)" />
-                <Tooltip />
+                <Tooltip cursor={<RechartsBarHoverCursor />} />
                 <Legend />
                 <Bar dataKey="submissions" fill="var(--accent-primary)" name="Submissions" radius={[8, 8, 0, 0]} />
                 <Bar dataKey="total" fill="var(--border-color)" name="Total Students" radius={[8, 8, 0, 0]} />

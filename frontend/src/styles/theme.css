@@ -61,6 +61,8 @@
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
+  /* Recharts BarChart Tooltip vertical guide (light: darker neutral) */
+  --chart-bar-hover-line: #64748b;
   --sidebar: var(--bg-secondary);
   --sidebar-foreground: var(--text-primary);
   --sidebar-primary: var(--accent-primary);
@@ -115,6 +117,8 @@
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
+  /* Recharts BarChart Tooltip vertical guide (dark: lighter neutral) */
+  --chart-bar-hover-line: #cbd5e1;
   --sidebar: var(--bg-secondary);
   --sidebar-foreground: var(--text-primary);
   --sidebar-primary: var(--accent-primary);
@@ -351,4 +355,17 @@
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
   }
+}
+
+/* Recharts default tooltip: library sets white bg + no label color; in dark mode the label
+   inherited light page text and disappeared. Use semantic tokens so day/axis labels stay visible. */
+.recharts-default-tooltip {
+  background-color: var(--card) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius);
+  color: var(--foreground);
+}
+
+.recharts-default-tooltip .recharts-tooltip-label {
+  color: var(--foreground) !important;
 }

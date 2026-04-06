@@ -15,15 +15,24 @@ export const Register = () => {
   const [department, setDepartment] = useState("");
   const [teachingLoad, setTeachingLoad] = useState("");
   const [batches, setBatches] = useState<PublicBatch[]>([]);
+  const [isLoadingBatches, setIsLoadingBatches] = useState(true);
+  const [batchError, setBatchError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
+    setIsLoadingBatches(true);
+    setBatchError(null);
+
     void fetchPublicBatches()
       .then((r) => setBatches(r.items))
-      .catch(() => setBatches([]));
+      .catch(() => {
+        setBatches([]);
+        setBatchError("Unable to load batch options.");
+      })
+      .finally(() => setIsLoadingBatches(false));
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -155,16 +164,28 @@ export const Register = () => {
               value={batchId}
               onChange={(e) => setBatchId(e.target.value === "" ? "" : Number(e.target.value))}
               className="w-full rounded-lg border border-border bg-input-background px-4 py-3 text-foreground transition-colors focus:border-primary focus:outline-none"
-              disabled={isLoading}
+              disabled={isLoading || isLoadingBatches || batches.length === 0}
               required
             >
-              <option value="">Select batch</option>
+              <option value="">{isLoadingBatches ? "Loading batches..." : "Select batch"}</option>
+              {batches.length === 0 && !isLoadingBatches && (
+                <option value="" disabled>
+                  No batches configured
+                </option>
+              )}
               {batches.map((b) => (
                 <option key={b.id} value={b.id}>
-                  {b.name} ({b.year_label})
+                  {b.label}
                 </option>
               ))}
             </select>
+            {batchError ? (
+              <p className="mt-2 text-sm text-destructive">{batchError}</p>
+            ) : batches.length === 0 && !isLoadingBatches ? (
+              <p className="mt-2 text-sm text-muted-foreground">
+                No batch options are available. Ask your administrator to add a batch or run the backend seed command.
+              </p>
+            ) : null}
           </div>
         )}
 
@@ -205,7 +226,10 @@ export const Register = () => {
 
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={
+            isLoading ||
+            (role === "student" && !isLoadingBatches && batches.length === 0)
+          }
           className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3 text-primary-foreground transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}

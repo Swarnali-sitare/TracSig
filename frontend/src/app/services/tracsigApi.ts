@@ -67,7 +67,7 @@ export async function fetchMe() {
   return apiRequest<AuthMe>("/api/auth/me");
 }
 
-export type PublicBatch = { id: number; name: string; year_label: string };
+export type PublicBatch = { id: number; name: string; year_label: string; label: string };
 
 export async function fetchPublicBatches() {
   return apiRequest<{ items: PublicBatch[] }>("/api/auth/batches");

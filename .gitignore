@@ -1,43 +1,169 @@
-# Dependencies
-node_modules/
+# =============================================================================
+# TracSig — root .gitignore (Flask backend + Vite/React frontend)
+# Single source of truth for the whole repository.
+# =============================================================================
 
-# Build output
-dist/
-build/
-
-# Vite
-.vite/
-
-# Environment & secrets
+# -----------------------------------------------------------------------------
+# Environment & secrets (never commit)
+# -----------------------------------------------------------------------------
 .env
 .env.*
+*.env
 !.env.example
+!**/.env.example
+.envrc
 
-# Logs & debug
+# -----------------------------------------------------------------------------
+# Virtual environments
+# -----------------------------------------------------------------------------
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# -----------------------------------------------------------------------------
+# Python / Flask
+# -----------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+*.so
+.Python
+
+# Packaging / setuptools (repo-root artifacts only; avoids ignoring arbitrary */lib/)
+/.eggs/
+/*.egg-info/
+.eggs/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+pip-log.txt
+pip-delete-this-directory.txt
+develop-eggs/
+eggs/
+sdist/
+wheels/
+share/python-wheels/
+
+# Flask instance folder (local config, SQLite, secrets)
+instance/
+.webassets-cache
+
+# Testing / type-check / analysis
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.cover
+*.py,cover
+
+# -----------------------------------------------------------------------------
+# Databases & dumps (keep versioned SQL under backend/migrations/)
+# -----------------------------------------------------------------------------
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+dumps/
+*.dump
+
+# -----------------------------------------------------------------------------
+# Build & distribution output (frontend Vite + Python packaging)
+# -----------------------------------------------------------------------------
+dist/
+build/
+downloads/
+parts/
+var/
+out/
+
+# -----------------------------------------------------------------------------
+# Node.js / npm / Vite / React
+# -----------------------------------------------------------------------------
+node_modules/
+jspm_packages/
+
+# Vite / bundler caches
+.vite/
+.parcel-cache/
+.turbo/
+.next/
+.nuxt/
+.cache/
+
+# TypeScript / lint caches
+*.tsbuildinfo
+.eslintcache
+.stylelintcache
+
+# -----------------------------------------------------------------------------
+# Logs
+# -----------------------------------------------------------------------------
 logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+lerna-debug.log*
 
-# Test / coverage
+# -----------------------------------------------------------------------------
+# Test coverage (JavaScript)
+# -----------------------------------------------------------------------------
 coverage/
 .nyc_output/
 
-# TypeScript
-*.tsbuildinfo
+# -----------------------------------------------------------------------------
+# Runtime uploads / exports (optional app folders)
+# -----------------------------------------------------------------------------
+uploads/
+exports/
+media/
+storage/
+tmp/
+temp/
 
+# -----------------------------------------------------------------------------
 # OS
+# -----------------------------------------------------------------------------
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+Desktop.ini
 
-# Editor / IDE
+# -----------------------------------------------------------------------------
+# IDE / editors
+# -----------------------------------------------------------------------------
 .idea/
+.vscode/
 *.swp
 *.swo
 *~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
 
-# Optional: local tooling (uncomment if you use these)
-# .vscode/
-# *.local
+# -----------------------------------------------------------------------------
+# Misc
+# -----------------------------------------------------------------------------
+*.orig
+*.bak
+*.tmp
+*.temp

@@ -40,7 +40,19 @@ def _user_me(u: User) -> dict:
 def public_batches():
     """List batches for student self-registration (no auth)."""
     rows = Batch.query.order_by(Batch.id.asc()).all()
-    return jsonify({"items": [{"id": b.id, "name": b.name, "year_label": b.year_label} for b in rows]})
+    return jsonify(
+        {
+            "items": [
+                {
+                    "id": b.id,
+                    "name": b.name,
+                    "year_label": b.year_label,
+                    "label": b.year_label,
+                }
+                for b in rows
+            ]
+        }
+    )
 
 
 @auth_bp.post("/register")

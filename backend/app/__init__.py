@@ -68,12 +68,22 @@ def create_app(config_class: type | None = None) -> Flask:
         from app.models import Assignment, Batch, BatchCourse, Course, User
 
         db.create_all()
+
+        batch_years = ["2022", "2023", "2024", "2025"]
+        batches = {}
+        for year_label in batch_years:
+            batch = Batch.query.filter_by(name="", year_label=year_label).first()
+            if not batch:
+                batch = Batch(name="", year_label=year_label)
+                db.session.add(batch)
+                db.session.flush()
+            batches[year_label] = batch
+
         if User.query.filter_by(email="admin@example.com").first():
-            click.echo("Demo data already present (admin@example.com exists).")
+            click.echo("Demo admin already exists. Batches from 2022 to 2025 have been seeded.")
+            db.session.commit()
             return
-        if Batch.query.filter_by(name="CSE", year_label="2024").first():
-            click.echo("Demo batch CSE/2024 already exists; skipping seed-demo.")
-            return
+
         admin = User(
             email="admin@example.com",
             password_hash=generate_password_hash("admin123"),
@@ -82,9 +92,8 @@ def create_app(config_class: type | None = None) -> Flask:
             department="Computer Science",
         )
         db.session.add(admin)
-        batch = Batch(name="CSE", year_label="2024")
-        db.session.add(batch)
         db.session.flush()
+        batch = batches["2024"]
         staff = User(
             email="faculty@example.com",
             password_hash=generate_password_hash("faculty123"),
