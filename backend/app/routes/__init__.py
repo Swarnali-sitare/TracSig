@@ -9,6 +9,8 @@ from app.routes.student import student_bp
 
 
 def register_blueprints(app: Flask) -> None:
+    from app.routes import admin_student_data  # noqa: F401 — register /batch and /student routes on admin_bp
+
     app.register_blueprint(health_bp, url_prefix="/api")
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(student_bp, url_prefix="/api/student")

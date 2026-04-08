@@ -125,7 +125,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   ): Promise<User> => {
     setIsLoading(true);
     try {
-      const apiRole = role === "faculty" ? "Staff" : "Student";
+      const apiRole: "Student" | "Staff" | "Admin" =
+        role === "faculty" ? "Staff" : role === "admin" ? "Admin" : "Student";
       const body: Parameters<typeof registerRequest>[0] = {
         name,
         email,
@@ -137,7 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           throw new Error("batch_id is required for students");
         }
         body.batch_id = options.batchId;
-      } else {
+      } else if (apiRole === "Staff") {
         body.department = options?.department ?? undefined;
         body.teaching_load_hours = options?.teachingLoadHours ?? undefined;
       }

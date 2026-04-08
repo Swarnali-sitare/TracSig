@@ -6,7 +6,7 @@ from werkzeug.security import generate_password_hash
 from app.decorators import require_roles
 from app.errors import ApiError
 from app.extensions import db
-from app.models import Assignment, Batch, BatchCourse, Course, Submission, User
+from app.models import Assignment, Batch, BatchCourse, Course, Student, Submission, User
 from app.services.assignment_helpers import assignments_for_student, record_status
 from app.services.dashboards import admin_dashboard
 
@@ -71,19 +71,25 @@ def create_student():
         raise ApiError("VALIDATION_ERROR", "name, email, password, batch_id required", 422)
     if len(password) < 6:
         raise ApiError("VALIDATION_ERROR", "Password too short", 422)
-    if User.query.filter_by(email=email).first():
+    if User.query.filter_by(email=email).first() or Student.query.filter_by(email=email).first():
         raise ApiError("CONFLICT", "Email exists", 409)
     if not db.session.get(Batch, int(batch_id)):
         raise ApiError("VALIDATION_ERROR", "Invalid batch", 422)
+    ph = generate_password_hash(password)
     u = User(
         email=email,
-        password_hash=generate_password_hash(password),
+        password_hash=ph,
         full_name=name,
         role="Student",
         batch_id=int(batch_id),
         department=department,
     )
     db.session.add(u)
+    db.session.flush()
+    sid = f"USR{u.id}"
+    st = Student(id=sid, name=name, email=email, password_hash=ph, batch_id=int(batch_id))
+    db.session.add(st)
+    u.student_record_id = sid
     db.session.commit()
     return jsonify({"id": u.id}), 201
 
@@ -114,6 +120,12 @@ def delete_student(uid: int):
     u = User.query.filter_by(id=uid, role="Student").first()
     if not u:
         raise ApiError("NOT_FOUND", "Student not found", 404)
+    if u.student_record_id:
+        st = db.session.get(Student, u.student_record_id)
+        if st:
+            db.session.delete(st)
+            db.session.commit()
+            return "", 204
     db.session.delete(u)
     db.session.commit()
     return "", 204

@@ -1,15 +1,32 @@
 from __future__ import annotations
 
 from flask import Blueprint, g, jsonify, request
+from sqlalchemy import inspect as sa_inspect
+from sqlalchemy.exc import IntegrityError, OperationalError, ProgrammingError
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.auth_jwt import decode_token, issue_tokens, normalize_role, refresh_access_token, revoke_refresh_jti
 from app.decorators import require_auth
 from app.errors import ApiError
 from app.extensions import db
-from app.models import Batch, User
+from app.models import Batch, Student, User
 
 auth_bp = Blueprint("auth", __name__)
+
+
+def _students_table_exists() -> bool:
+    try:
+        return bool(sa_inspect(db.engine).has_table("students"))
+    except Exception:
+        return False
+
+
+def _email_already_registered(email: str) -> bool:
+    if User.query.filter_by(email=email).first():
+        return True
+    if _students_table_exists():
+        return Student.query.filter_by(email=email).first() is not None
+    return False
 
 
 def _user_public(u: User) -> dict:
@@ -48,6 +65,8 @@ def public_batches():
                     "name": b.name,
                     "year_label": b.year_label,
                     "label": b.year_label,
+                    "start_date": b.start_date.isoformat() if b.start_date else None,
+                    "end_date": b.end_date.isoformat() if b.end_date else None,
                 }
                 for b in rows
             ]
@@ -67,7 +86,9 @@ def register():
         role = "Student"
     elif rk in ("staff", "faculty", "teacher"):
         role = "Staff"
-    elif role_raw in ("Student", "Staff"):
+    elif rk in ("admin", "administrator"):
+        role = "Admin"
+    elif role_raw in ("Student", "Staff", "Admin"):
         role = role_raw
     else:
         role = ""
@@ -76,12 +97,15 @@ def register():
         raise ApiError("VALIDATION_ERROR", "name, email, and password are required", 422)
     if len(password) < 6:
         raise ApiError("VALIDATION_ERROR", "Password must be at least 6 characters", 422)
-    if role == "Admin":
-        raise ApiError("FORBIDDEN", "Admin self-registration is not allowed", 403)
-    if role not in ("Student", "Staff"):
-        raise ApiError("VALIDATION_ERROR", "role must be Student or Staff", 422, [{"field": "role", "issue": "invalid"}])
+    if role not in ("Student", "Staff", "Admin"):
+        raise ApiError(
+            "VALIDATION_ERROR",
+            "role must be Student, Staff, or Admin",
+            422,
+            [{"field": "role", "issue": "invalid"}],
+        )
 
-    if User.query.filter_by(email=email).first():
+    if _email_already_registered(email):
         raise ApiError("VALIDATION_ERROR", "Email already registered", 409, [{"field": "email", "issue": "already_exists"}])
 
     batch_id = data.get("batch_id")
@@ -92,6 +116,14 @@ def register():
         if not b:
             raise ApiError("VALIDATION_ERROR", "Invalid batch_id", 422)
 
+    tl_raw = data.get("teaching_load_hours") if role == "Staff" else None
+    teaching_load_hours = None
+    if tl_raw is not None and tl_raw != "":
+        try:
+            teaching_load_hours = int(tl_raw)
+        except (TypeError, ValueError):
+            teaching_load_hours = None
+
     user = User(
         email=email,
         password_hash=generate_password_hash(password),
@@ -99,12 +131,65 @@ def register():
         role=role,
         batch_id=int(batch_id) if role == "Student" else None,
         department=(data.get("department") or None) if role == "Staff" else None,
-        teaching_load_hours=data.get("teaching_load_hours") if role == "Staff" else None,
+        teaching_load_hours=teaching_load_hours,
     )
-    db.session.add(user)
-    db.session.commit()
+    try:
+        db.session.add(user)
+        db.session.flush()
+        if role == "Student":
+            if not _students_table_exists():
+                db.session.rollback()
+                raise ApiError(
+                    "VALIDATION_ERROR",
+                    "Student registration requires database schema with a students table. Run `flask init-db` or apply migrations.",
+                    503,
+                )
+            sid = f"REG{user.id}"
+            st = Student(
+                id=sid,
+                name=name,
+                email=email,
+                password_hash=user.password_hash,
+                batch_id=int(batch_id),
+            )
+            db.session.add(st)
+            user.student_record_id = sid
+        db.session.commit()
+    except IntegrityError as err:
+        db.session.rollback()
+        orig = str(getattr(err, "orig", err) or err)
+        low = orig.lower()
+        if "email" in low or "unique" in low:
+            raise ApiError("VALIDATION_ERROR", "Email already registered", 409) from err
+        if "ck_users_role" in low or ("role" in low and "check" in low):
+            raise ApiError(
+                "VALIDATION_ERROR",
+                "This database does not allow the Admin role yet. Run: ./venv/bin/flask sync-schema",
+                400,
+            ) from err
+        raise ApiError("VALIDATION_ERROR", "Registration could not be completed", 400) from err
+    except (OperationalError, ProgrammingError) as err:
+        db.session.rollback()
+        raise ApiError(
+            "VALIDATION_ERROR",
+            "Database schema is out of date. From the backend folder run: ./venv/bin/flask sync-schema",
+            503,
+        ) from err
 
-    access, refresh, expires_in = issue_tokens(user)
+    user = db.session.get(User, user.id)
+    if user is None:
+        raise ApiError("VALIDATION_ERROR", "Registration could not be completed", 500)
+
+    try:
+        access, refresh, expires_in = issue_tokens(user)
+    except (IntegrityError, OperationalError, ProgrammingError) as err:
+        db.session.rollback()
+        raise ApiError(
+            "VALIDATION_ERROR",
+            "Could not issue session tokens. From the backend folder run: ./venv/bin/flask sync-schema",
+            503,
+        ) from err
+
     return (
         jsonify(
             {
@@ -125,18 +210,42 @@ def login():
     password = data.get("password") or ""
     if not email or not password:
         raise ApiError("VALIDATION_ERROR", "email and password are required", 422)
+
+    def _ok(u: User):
+        access, refresh, expires_in = issue_tokens(u)
+        return jsonify(
+            {
+                "user": _user_public(u),
+                "access_token": access,
+                "refresh_token": refresh,
+                "expires_in": expires_in,
+            }
+        )
+
     user = User.query.filter_by(email=email).first()
-    if not user or not check_password_hash(user.password_hash, password):
-        raise ApiError("UNAUTHORIZED", "Invalid email or password", 401)
-    access, refresh, expires_in = issue_tokens(user)
-    return jsonify(
-        {
-            "user": _user_public(user),
-            "access_token": access,
-            "refresh_token": refresh,
-            "expires_in": expires_in,
-        }
-    )
+    if user:
+        if user.role in ("Admin", "Staff"):
+            if check_password_hash(user.password_hash, password):
+                return _ok(user)
+            raise ApiError("UNAUTHORIZED", "Invalid email or password", 401)
+        if user.role == "Student":
+            st = None
+            if user.student_record_id and _students_table_exists():
+                st = db.session.get(Student, user.student_record_id)
+            if st and check_password_hash(st.password_hash, password):
+                return _ok(user)
+            if check_password_hash(user.password_hash, password):
+                return _ok(user)
+            raise ApiError("UNAUTHORIZED", "Invalid email or password", 401)
+
+    if _students_table_exists():
+        st = Student.query.filter_by(email=email).first()
+        if st and check_password_hash(st.password_hash, password):
+            u = User.query.filter_by(student_record_id=st.id).first()
+            if u:
+                return _ok(u)
+
+    raise ApiError("UNAUTHORIZED", "Invalid email or password", 401)
 
 
 @auth_bp.post("/logout")
@@ -203,5 +312,9 @@ def put_password():
     if len(new_pw) < 6:
         raise ApiError("VALIDATION_ERROR", "New password must be at least 6 characters", 422)
     u.password_hash = generate_password_hash(new_pw)
+    if u.student_record_id:
+        st = db.session.get(Student, u.student_record_id)
+        if st:
+            st.password_hash = u.password_hash
     db.session.commit()
     return jsonify({"ok": True})

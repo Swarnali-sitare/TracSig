@@ -65,7 +65,7 @@ def create_app(config_class: type | None = None) -> Flask:
 
         from werkzeug.security import generate_password_hash
 
-        from app.models import Assignment, Batch, BatchCourse, Course, User
+        from app.models import Assignment, Batch, BatchCourse, Course, Student, User
 
         db.create_all()
 
@@ -104,13 +104,24 @@ def create_app(config_class: type | None = None) -> Flask:
         )
         db.session.add(staff)
         db.session.flush()
+        stu_pw = generate_password_hash("student123")
+        student_row = Student(
+            id="DEMO-STU-1",
+            name="Demo Student",
+            email="student@example.com",
+            password_hash=stu_pw,
+            batch_id=batch.id,
+        )
+        db.session.add(student_row)
+        db.session.flush()
         student = User(
             email="student@example.com",
-            password_hash=generate_password_hash("student123"),
+            password_hash=stu_pw,
             full_name="Demo Student",
             role="Student",
             batch_id=batch.id,
             department="Computer Science",
+            student_record_id=student_row.id,
         )
         db.session.add(student)
         course = Course(
@@ -137,5 +148,32 @@ def create_app(config_class: type | None = None) -> Flask:
         click.echo(
             "Seeded: admin@example.com / admin123, faculty@example.com / faculty123, student@example.com / student123"
         )
+
+    @app.cli.command("sync-db-checks")
+    def sync_db_checks():
+        """PostgreSQL: recreate users.ck_users_role so Admin is allowed (fixes admin self-register on older DBs)."""
+        from sqlalchemy import text
+
+        url = str(db.engine.url)
+        if not url.startswith("postgresql"):
+            click.echo("sync-db-checks is for PostgreSQL only. For SQLite, use a fresh DB or flask init-db.")
+            return
+        with db.engine.begin() as conn:
+            conn.execute(text("ALTER TABLE users DROP CONSTRAINT IF EXISTS ck_users_role"))
+            conn.execute(
+                text(
+                    "ALTER TABLE users ADD CONSTRAINT ck_users_role "
+                    "CHECK (role IN ('Student','Staff','Admin'))"
+                )
+            )
+        click.echo("Updated users.ck_users_role to allow Student, Staff, and Admin.")
+
+    @app.cli.command("sync-schema")
+    def sync_schema():
+        """Add missing tables/columns and PostgreSQL constraints (fixes 500s after model changes)."""
+        from app.schema_sync import sync_database_schema
+
+        for line in sync_database_schema():
+            click.echo(line)
 
     return app

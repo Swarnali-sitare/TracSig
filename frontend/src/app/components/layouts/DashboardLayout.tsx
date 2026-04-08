@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Outlet, Navigate } from "react-router";
+import { Outlet, Navigate, useLocation } from "react-router";
 import { useAuth } from "../../context/AuthContext";
 import { NotificationsProvider } from "../../context/NotificationsContext";
 import { Sidebar } from "../common/Sidebar";
@@ -7,11 +7,23 @@ import { Header } from "../common/Header";
 
 export const DashboardLayout = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // Redirect to login if not authenticated
   if (!user) {
     return <Navigate to="/auth/login" replace />;
+  }
+
+  const path = location.pathname;
+  if (path.startsWith("/admin") && user.role !== "admin") {
+    return <Navigate to={`/${user.role}/dashboard`} replace />;
+  }
+  if (path.startsWith("/student") && user.role !== "student") {
+    return <Navigate to={`/${user.role}/dashboard`} replace />;
+  }
+  if (path.startsWith("/faculty") && user.role !== "faculty") {
+    return <Navigate to={`/${user.role}/dashboard`} replace />;
   }
 
   return (

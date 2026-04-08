@@ -35,7 +35,7 @@ export async function registerRequest(body: {
   name: string;
   email: string;
   password: string;
-  role: "Student" | "Staff";
+  role: "Student" | "Staff" | "Admin";
   batch_id?: number;
   department?: string | null;
   teaching_load_hours?: number | null;
@@ -67,7 +67,14 @@ export async function fetchMe() {
   return apiRequest<AuthMe>("/api/auth/me");
 }
 
-export type PublicBatch = { id: number; name: string; year_label: string; label: string };
+export type PublicBatch = {
+  id: number;
+  name: string;
+  year_label: string;
+  label: string;
+  start_date?: string | null;
+  end_date?: string | null;
+};
 
 export async function fetchPublicBatches() {
   return apiRequest<{ items: PublicBatch[] }>("/api/auth/batches");
@@ -252,4 +259,61 @@ export async function deleteAdminCourse(id: number) {
 
 export async function fetchAdminBatches() {
   return apiRequest<{ items: { id: number; name: string; year_label: string }[] }>("/api/admin/batches");
+}
+
+/** Admin batch & student management (dates + strength). */
+export type AdminBatchSummary = {
+  id: number;
+  name: string;
+  start_date: string | null;
+  end_date: string | null;
+  strength: number;
+};
+
+export async function fetchAdminBatchSummaries() {
+  return apiRequest<{ items: AdminBatchSummary[] }>("/api/admin/batch");
+}
+
+export async function createAdminBatchV2(body: { name: string; start_date: string; end_date: string }) {
+  return apiRequest<{ id: number }>("/api/admin/batch", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function fetchAdminBatchDetail(batchId: number) {
+  return apiRequest<{
+    batch: { id: number; name: string; start_date: string | null; end_date: string | null };
+    students: { id: string; name: string; email: string }[];
+  }>(`/api/admin/batch/${batchId}`);
+}
+
+export async function createAdminManagedStudent(body: {
+  id: string;
+  name: string;
+  email: string;
+  password: string;
+  batch_id: number;
+}) {
+  return apiRequest<{ id: string }>("/api/admin/student", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function bulkUploadAdminStudents(batchId: number, file: File) {
+  const fd = new FormData();
+  fd.set("batch_id", String(batchId));
+  fd.set("file", file);
+  return apiRequest<{ added: number; skipped: number }>("/api/admin/student/bulk", {
+    method: "POST",
+    body: fd,
+  });
+}
+
+export async function deleteAdminManagedStudents(ids: string[]) {
+  return apiRequest<{ deleted: number }>("/api/admin/student", {
+    method: "DELETE",
+    body: JSON.stringify({ ids }),
+  });
 }

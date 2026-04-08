@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from sqlalchemy import CheckConstraint, UniqueConstraint
+from sqlalchemy import CheckConstraint, Date, UniqueConstraint
 
 from app.extensions import db
 
@@ -13,11 +13,29 @@ class Batch(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(255), nullable=False)
     year_label = db.Column(db.String(32), nullable=False)
+    start_date = db.Column(Date, nullable=True)
+    end_date = db.Column(Date, nullable=True)
     created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
     __table_args__ = (UniqueConstraint("name", "year_label", name="uq_batches_name_year"),)
 
     users = db.relationship("User", back_populates="batch", foreign_keys="User.batch_id")
+    student_records = db.relationship("Student", back_populates="batch")
+
+
+class Student(db.Model):
+    """Managed student identity (admin). Shadow `User` rows link via `student_record_id` for LMS APIs."""
+
+    __tablename__ = "students"
+
+    id = db.Column(db.String(64), primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    email = db.Column(db.String(255), unique=True, nullable=False, index=True)
+    password_hash = db.Column(db.Text, nullable=False)
+    batch_id = db.Column(db.Integer, db.ForeignKey("batches.id", ondelete="RESTRICT"), nullable=False, index=True)
+
+    batch = db.relationship("Batch", back_populates="student_records")
+    shadow_user = db.relationship("User", back_populates="student_record", uselist=False)
 
 
 class User(db.Model):
@@ -31,6 +49,12 @@ class User(db.Model):
     department = db.Column(db.String(255), nullable=True)
     teaching_load_hours = db.Column(db.SmallInteger, nullable=True)
     batch_id = db.Column(db.Integer, db.ForeignKey("batches.id", ondelete="SET NULL"), nullable=True)
+    student_record_id = db.Column(
+        db.String(64),
+        db.ForeignKey("students.id", ondelete="CASCADE"),
+        nullable=True,
+        unique=True,
+    )
     created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = db.Column(
         db.DateTime(timezone=True),
@@ -40,6 +64,7 @@ class User(db.Model):
     )
 
     batch = db.relationship("Batch", back_populates="users", foreign_keys=[batch_id])
+    student_record = db.relationship("Student", back_populates="shadow_user", foreign_keys=[student_record_id])
     courses_teaching = db.relationship("Course", back_populates="instructor", foreign_keys="Course.staff_id")
 
     __table_args__ = (
