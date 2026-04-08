@@ -224,6 +224,81 @@ def get_staff(uid: int):
     )
 
 
+@admin_bp.patch("/staff/<int:uid>")
+@require_roles("Admin")
+def patch_staff(uid: int):
+    u = User.query.filter_by(id=uid, role="Staff").first()
+    if not u:
+        raise ApiError("NOT_FOUND", "Staff not found", 404)
+    data = request.get_json(silent=True) or {}
+    allowed_keys = {"name", "email", "department", "teaching_load_hours", "password"}
+    if not (set(data.keys()) & allowed_keys):
+        raise ApiError("VALIDATION_ERROR", "No fields to update", 422)
+    fac = db.session.get(Faculty, u.faculty_record_id) if u.faculty_record_id else None
+
+    if "name" in data:
+        name = (data.get("name") or "").strip()
+        if not name:
+            raise ApiError("VALIDATION_ERROR", "name cannot be empty", 422)
+        u.full_name = name
+        if fac:
+            fac.full_name = name
+
+    if "email" in data:
+        email = (data.get("email") or "").strip().lower()
+        if not email:
+            raise ApiError("VALIDATION_ERROR", "email cannot be empty", 422)
+        if User.query.filter(User.email == email, User.id != u.id).first():
+            raise ApiError("CONFLICT", "Email already in use", 409)
+        if Student.query.filter_by(email=email).first():
+            raise ApiError("CONFLICT", "Email already in use", 409)
+        fq = Faculty.query.filter_by(email=email)
+        if u.faculty_record_id:
+            fq = fq.filter(Faculty.id != u.faculty_record_id)
+        if fq.first():
+            raise ApiError("CONFLICT", "Email already in use", 409)
+        u.email = email
+        if fac:
+            fac.email = email
+
+    if "department" in data:
+        raw = data.get("department")
+        dept = str(raw).strip() if raw is not None and str(raw).strip() != "" else None
+        u.department = dept
+        if fac:
+            fac.department = dept
+
+    if "teaching_load_hours" in data:
+        tl = data.get("teaching_load_hours")
+        if tl is None or tl == "":
+            u.teaching_load_hours = None
+            if fac:
+                fac.teaching_load_hours = None
+        else:
+            try:
+                tl_int = int(tl)
+            except (TypeError, ValueError) as e:
+                raise ApiError("VALIDATION_ERROR", "teaching_load_hours must be an integer", 422) from e
+            if tl_int < 1 or tl_int > 20:
+                raise ApiError("VALIDATION_ERROR", "teaching_load_hours must be 1–20", 422)
+            u.teaching_load_hours = tl_int
+            if fac:
+                fac.teaching_load_hours = tl_int
+
+    if "password" in data:
+        pw = data.get("password") or ""
+        if pw:
+            if len(pw) < 6:
+                raise ApiError("VALIDATION_ERROR", "Password too short", 422)
+            ph = generate_password_hash(pw)
+            u.password_hash = ph
+            if fac:
+                fac.password_hash = ph
+
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
 @admin_bp.delete("/staff/<int:uid>")
 @require_roles("Admin")
 def delete_staff(uid: int):

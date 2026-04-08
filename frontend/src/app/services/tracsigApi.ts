@@ -199,6 +199,22 @@ export async function createAdminStaff(body: {
   });
 }
 
+export async function updateAdminStaff(
+  id: number,
+  body: {
+    name?: string;
+    email?: string;
+    department?: string | null;
+    teaching_load_hours?: number | null;
+    password?: string;
+  }
+) {
+  return apiRequest<{ ok: boolean }>(`/api/admin/staff/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
 export async function deleteAdminStaff(id: number) {
   await apiRequest(`/api/admin/staff/${id}`, { method: "DELETE" });
 }
@@ -253,6 +269,12 @@ export async function fetchAdminBatchDetail(batchId: number) {
     batch: { id: number; name: string; start_date: string | null; end_date: string | null };
     students: { id: string; name: string; email: string }[];
   }>(`/api/admin/batch/${batchId}`);
+}
+
+export async function deleteAdminBatch(batchId: number) {
+  return apiRequest<{ message: string }>(`/api/admin/batch/${batchId}`, {
+    method: "DELETE",
+  });
 }
 
 export async function createAdminManagedStudent(body: {

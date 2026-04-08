@@ -97,6 +97,26 @@ def admin_list_batches_with_strength():
     return jsonify({"items": out})
 
 
+@admin_bp.delete("/batch/<int:batch_id>")
+@require_roles("Admin")
+def admin_delete_batch(batch_id: int):
+    """Remove batch and all managed students in it; revokes student login (students + shadow users)."""
+    b = db.session.get(Batch, batch_id)
+    if not b:
+        raise ApiError("NOT_FOUND", "Batch not found", 404)
+    # Delete shadow Student users first. Deleting the Batch would SET NULL on users.batch_id via FK,
+    # which violates ck_student_batch (Student role requires batch_id NOT NULL) while the row still exists.
+    for u in User.query.filter_by(batch_id=batch_id, role="Student").all():
+        db.session.delete(u)
+    db.session.flush()
+    for st in Student.query.filter_by(batch_id=batch_id).all():
+        db.session.delete(st)
+    db.session.flush()
+    db.session.delete(b)
+    db.session.commit()
+    return jsonify({"message": "Batch and associated students deleted successfully"})
+
+
 @admin_bp.get("/batch/<int:batch_id>")
 @require_roles("Admin")
 def admin_batch_students(batch_id: int):

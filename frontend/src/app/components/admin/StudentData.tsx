@@ -7,6 +7,7 @@ import {
   bulkUploadAdminStudents,
   createAdminBatchV2,
   createAdminManagedStudent,
+  deleteAdminBatch,
   fetchAdminBatchDetail,
   fetchAdminBatchSummaries,
   type AdminBatchSummary,
@@ -63,6 +64,9 @@ export const StudentData = () => {
   const [addBatchId, setAddBatchId] = useState<number | null>(null);
   const [addForm, setAddForm] = useState({ id: "", name: "", email: "", password: "" });
   const [addSubmitting, setAddSubmitting] = useState(false);
+
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -137,6 +141,25 @@ export const StudentData = () => {
       else toast.error("Upload failed");
     } finally {
       setBulkSubmitting(false);
+    }
+  };
+
+  const handleConfirmDeleteBatch = async () => {
+    if (deleteTarget == null) return;
+    setDeleteSubmitting(true);
+    try {
+      const res = await deleteAdminBatch(deleteTarget.id);
+      toast.success(res.message || "Batch deleted");
+      if (viewBatchId === deleteTarget.id) {
+        setViewBatchId(null);
+      }
+      setDeleteTarget(null);
+      await load();
+    } catch (e) {
+      if (e instanceof ApiRequestError) toast.error(e.message);
+      else toast.error("Could not delete batch");
+    } finally {
+      setDeleteSubmitting(false);
     }
   };
 
@@ -239,15 +262,22 @@ export const StudentData = () => {
                         <DropdownMenuTrigger asChild>
                           <button
                             type="button"
-                            className="p-2 rounded-lg hover:bg-hover-bg text-foreground inline-flex"
+                            disabled={deleteSubmitting}
+                            className="p-2 rounded-lg hover:bg-hover-bg text-foreground inline-flex disabled:opacity-50 disabled:pointer-events-none"
                             aria-label="Batch actions"
                           >
                             <MoreVertical className="w-5 h-5" />
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-52">
-                          <DropdownMenuItem onSelect={() => void openView(b.id)}>View batch info</DropdownMenuItem>
                           <DropdownMenuItem
+                            disabled={deleteSubmitting}
+                            onSelect={() => void openView(b.id)}
+                          >
+                            View batch info
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            disabled={deleteSubmitting}
                             onSelect={() => {
                               setBulkBatchId(b.id);
                               setBulkFile(null);
@@ -256,6 +286,7 @@ export const StudentData = () => {
                             Upload bulk student
                           </DropdownMenuItem>
                           <DropdownMenuItem
+                            disabled={deleteSubmitting}
                             onSelect={() => {
                               setAddBatchId(b.id);
                               setAddForm({ id: "", name: "", email: "", password: "" });
@@ -264,9 +295,17 @@ export const StudentData = () => {
                             Add student
                           </DropdownMenuItem>
                           <DropdownMenuItem
+                            disabled={deleteSubmitting}
                             onSelect={() => navigate(`/admin/student-data/batch/${b.id}/remove`)}
                           >
                             Remove student
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            disabled={deleteSubmitting}
+                            className="text-destructive focus:text-destructive"
+                            onSelect={() => setDeleteTarget({ id: b.id, name: b.name })}
+                          >
+                            Delete batch
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -411,6 +450,45 @@ export const StudentData = () => {
               className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-accent-hover disabled:opacity-50"
             >
               {bulkSubmitting ? "Uploading…" : "Upload"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={deleteTarget != null}
+        onOpenChange={(o) => {
+          if (!o && !deleteSubmitting) setDeleteTarget(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md" onPointerDownOutside={(e) => deleteSubmitting && e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle>Delete batch</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground py-2">
+            Are you sure you want to delete this batch? This will also remove all students and their access permanently.
+          </p>
+          {deleteTarget ? (
+            <p className="text-sm text-foreground font-medium border border-border rounded-lg px-3 py-2 bg-muted">
+              {deleteTarget.name}
+            </p>
+          ) : null}
+          <DialogFooter>
+            <button
+              type="button"
+              disabled={deleteSubmitting}
+              onClick={() => setDeleteTarget(null)}
+              className="px-4 py-2 rounded-lg bg-muted text-foreground hover:bg-hover-bg disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={deleteSubmitting}
+              onClick={() => void handleConfirmDeleteBatch()}
+              className="px-4 py-2 rounded-lg bg-destructive text-destructive-foreground hover:opacity-90 disabled:opacity-50"
+            >
+              {deleteSubmitting ? "Deleting…" : "Confirm"}
             </button>
           </DialogFooter>
         </DialogContent>
