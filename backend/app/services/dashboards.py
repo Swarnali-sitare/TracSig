@@ -288,7 +288,7 @@ def admin_dashboard() -> dict:
         recent_activity.append(
             {
                 "id": u.id * 10 + 1,
-                "action": "User registered",
+                "action": "New account",
                 "actor_name": u.full_name,
                 "created_at": u.created_at.isoformat() if u.created_at else "",
             }

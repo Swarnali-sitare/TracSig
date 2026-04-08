@@ -6,113 +6,129 @@ TracSig helps students and faculty keep track of assignments in one place.
 
 ## What you need on your computer
 
-Before you start, install **Node.js** (version 18 or newer). Node.js is free software that lets this project run on your machine.
+- **Python 3.11+** (for the Flask API in `backend/`)
+- **Node.js 18+** and **npm** (for the Vite/React app in `frontend/`)
 
-1. Go to [https://nodejs.org](https://nodejs.org) and download the **LTS** (“Long Term Support”) version for your system.
-2. Run the installer and follow the prompts. When it finishes, **npm** is included automatically—you do not need to install anything else for that.
-
-**How to check it worked:** Open a terminal (Command Prompt on Windows, or Terminal on Mac/Linux), type `node --version`, and press Enter. You should see a version number like `v20.x.x`.
+Install Node from [https://nodejs.org](https://nodejs.org) (LTS). Check with `node --version` and `python3 --version`.
 
 ---
 
-## How to run TracSig (two windows)
+## Authentication (closed system)
 
-TracSig has two parts: a **backend** (the server) and a **frontend** (what you see in the browser). You run both at the same time, using **two separate terminal windows or tabs**.
+There is **no public registration**. Users cannot create their own accounts from the UI.
 
-### Step 1 — Install the project files (do this once)
+| Role | How login works |
+|------|------------------|
+| **Admin** | One or more accounts from **environment** variables: legacy `ADMIN_EMAIL` / `ADMIN_PASSWORD` (or `ADMIN_PASSWORD_HASH`), and/or numbered `ADMIN_1_EMAIL` … `ADMIN_20_EMAIL` with matching `_PASSWORD` or `_PASSWORD_HASH`. No admin row is required in the database. |
+| **Student** | Email must exist in the **`students`** table and the password must match the stored hash. A linked shadow row in **`users`** is used for JWTs and LMS APIs. |
+| **Faculty** | Email must exist in the **`faculty`** table with a matching password hash, plus a linked shadow **`users`** row (`Staff`). |
 
-Open a terminal, go to the folder where you saved this project, then run these commands one after the other:
+Login order on the server: env admin → student → faculty; otherwise **401** with **Invalid credentials**.
+
+### Admin credentials (`.env`)
+
+Add to `backend/.env` (see `backend/.env.example`). Example with multiple admins:
+
+```env
+ADMIN_1_EMAIL=admin1@example.com
+ADMIN_1_PASSWORD=your-secret
+ADMIN_2_EMAIL=admin2@example.com
+ADMIN_2_PASSWORD=other-secret
+```
+
+You can still use a single **`ADMIN_EMAIL`** / **`ADMIN_PASSWORD`** (or **`ADMIN_PASSWORD_HASH`**) instead. For production, prefer strong passwords or per-slot **`ADMIN_N_PASSWORD_HASH`** from `werkzeug.security.generate_password_hash()`.
+
+---
+
+## How to run TracSig (two terminals)
+
+### Step 1 — Install dependencies (once)
+
+**Backend** (virtual environment recommended):
 
 ```bash
 cd backend
-npm install
+python3 -m venv venv
+./venv/bin/pip install -r requirements.txt
+cp .env.example .env
 ```
+
+Edit `backend/.env`: set **`SECRET_KEY`**, **`JWT_SECRET_KEY`** (long random strings), **`DATABASE_URL`**, at least one env admin (`ADMIN_1_EMAIL` / `ADMIN_1_PASSWORD` or legacy `ADMIN_EMAIL` / `ADMIN_PASSWORD`), and **`CORS_ORIGINS`** if needed.
+
+After model or column changes, align the database:
+
+```bash
+./venv/bin/flask sync-schema
+```
+
+Optional demo rows (batches, faculty, student, course):
+
+```bash
+./venv/bin/flask seed-demo
+```
+
+**Frontend:**
 
 ```bash
 cd ../frontend
 npm install
+cp .env.example .env
 ```
 
-The first time, this may take a few minutes. It downloads the pieces the app needs to run. You only need to repeat this if you delete those folders or get a fresh copy of the project.
+Ensure `VITE_API_BASE_URL` in `frontend/.env` points at your API (default `http://127.0.0.1:5000/api`).
 
 ---
 
-### Step 2 — Start the backend (first terminal)
+### Step 2 — Start the API (terminal A)
 
-1. Open a terminal and go to the `backend` folder inside the project.
-2. Create a settings file by copying the example:
+```bash
+cd backend
+./venv/bin/flask run --host 127.0.0.1 --port 5000 --reload
+```
 
-   ```bash
-   cp env.example .env
-   ```
-
-3. Open the new file named `.env` in a text editor. Find the lines for **`JWT_ACCESS_SECRET`** and **`JWT_REFRESH_SECRET`**. Replace the placeholder text with **two long random phrases** (at least 32 characters each). You can use a password manager or type random letters and numbers—they just need to be secret and hard to guess.
-
-4. Save the file.
-
-5. Start the server:
-
-   ```bash
-   npm run dev
-   ```
-
-Leave this terminal **open** while you use the app. The server address is **http://localhost:4000** (that means “this computer, port 4000”). If you open [http://localhost:4000/health](http://localhost:4000/health) in a browser and see a short “ok” style message, the backend is running.
+Check [http://127.0.0.1:5000/api/health](http://127.0.0.1:5000/api/health) for a healthy response.
 
 ---
 
-### Step 3 — Start the website (second terminal)
+### Step 3 — Start the website (terminal B)
 
-1. Open a **new** terminal (keep the first one running).
-2. Go to the `frontend` folder:
+```bash
+cd frontend
+npm run dev
+```
 
-   ```bash
-   cd path/to/TracSig/frontend
-   ```
-
-   Replace `path/to/TracSig` with the real location of the project on your computer.
-
-3. Start the site:
-
-   ```bash
-   npm run dev
-   ```
-
-4. The terminal will show a link, usually **http://localhost:5173**. Open that link in **Chrome, Firefox, or Edge**.
-
-You should see the TracSig interface. Log in and sign-up screens may work with **demo-style behavior** on your computer (not always the full server login until the app is fully connected to the backend).
+Open the URL shown (usually **http://localhost:5173**). Use the **Login** page only; sign-up is not available.
 
 ---
 
 ### Quick checklist
 
-| Step | What to do |
-|------|----------------|
-| 1 | Install Node.js (LTS) from nodejs.org |
-| 2 | Run `npm install` in `backend`, then in `frontend` |
-| 3 | Copy `backend/env.example` to `backend/.env` and fill in the two long secrets |
-| 4 | Terminal A: in `backend`, run `npm run dev` |
-| 5 | Terminal B: in `frontend`, run `npm run dev` |
-| 6 | Browser: open **http://localhost:5173** |
+| Step | Action |
+|------|--------|
+| 1 | Python venv + `pip install -r requirements.txt` in `backend` |
+| 2 | Copy `backend/.env.example` → `backend/.env` and configure DB, JWT secrets, **admin env vars** |
+| 3 | `flask sync-schema` (and `flask seed-demo` if you want sample data) |
+| 4 | `flask run` on port **5000** |
+| 5 | `npm install` and `npm run dev` in `frontend` |
+| 6 | Browser: SPA on **5173**, API on **5000** |
 
 ---
 
 ## If something goes wrong
 
-- **“Command not found” for `node` or `npm`:** Node.js is not installed correctly, or the terminal was opened before you finished installing. Close the terminal, open a new one, and try again.
-- **Port already in use:** Another program is using the same port. Close other copies of this app or change the port in the backend `.env` file (ask a developer if you are unsure).
-- **Blank page or errors in the browser:** Make sure **both** terminals are still running (backend and frontend) and you used the address the frontend terminal printed (usually port **5173**).
+- **Database errors after a pull:** Run `./venv/bin/flask sync-schema` again; for SQLite with heavy drift, recreate the DB with `flask init-db` if your project documents that command.
+- **CORS errors:** Add your frontend origin to **`CORS_ORIGINS`** in `backend/.env`.
+- **401 on login:** Confirm admin env vars, or that the student/faculty email exists in the correct table with a valid password hash.
 
 ---
 
-## Optional: building for production
+## Optional: production build
 
-This is only needed if you are **deploying** the app to a real server, not for everyday use on your own computer.
-
-- **Website:** In the `frontend` folder, run `npm run build`. The built files appear in the `frontend/dist` folder.
-- **Server:** In the `backend` folder, run `npm run build`, then `npm start`.
+- **Frontend:** `cd frontend && npm run build` → output in `frontend/dist`.
+- **API:** serve `wsgi:app` with **gunicorn** (or similar) behind HTTPS; set `FLASK_ENV=production` and strong secrets.
 
 ---
 
 ## More technical details
 
-For deeper notes on authentication and the API, see [SETUP.md](./SETUP.md). If you connect the UI to the Express auth API, use the role mapping in [`frontend/src/app/types/apiRoles.ts`](./frontend/src/app/types/apiRoles.ts) so signup/JWT roles stay **`Student` / `Teacher` / `Admin`** on the backend while the app keeps using **student / faculty / admin** in the browser.
+Role strings from the API (`Student`, `Staff`, `Admin`) are mapped in the SPA via [`frontend/src/app/types/apiRoles.ts`](frontend/src/app/types/apiRoles.ts). API shape notes: [backend-api-requirements.md](./backend-api-requirements.md). Older step-by-step auth notes in [SETUP.md](./SETUP.md) may not match the current Python layout.

@@ -7,9 +7,9 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 
 from app.config import get_config_class
-from app.errors import register_error_handlers
+from app.errors import attach_error_handlers
 from app.extensions import db
-from app.routes import register_blueprints
+from app.routes import mount_blueprints
 
 
 def create_app(config_class: type | None = None) -> Flask:
@@ -22,8 +22,8 @@ def create_app(config_class: type | None = None) -> Flask:
         resources={r"/api/*": {"origins": app.config["CORS_ORIGINS"]}},
         supports_credentials=True,
     )
-    register_error_handlers(app)
-    register_blueprints(app)
+    attach_error_handlers(app)
+    mount_blueprints(app)
 
     @app.get("/")
     def root():
@@ -60,12 +60,12 @@ def create_app(config_class: type | None = None) -> Flask:
 
     @app.cli.command("seed-demo")
     def seed_demo():
-        """Insert minimal demo data: admin, batch, staff, student, course, batch_course."""
+        """Insert minimal demo data: batches, faculty + shadow user, student + shadow user, course, assignment."""
         from datetime import date, timedelta
 
         from werkzeug.security import generate_password_hash
 
-        from app.models import Assignment, Batch, BatchCourse, Course, Student, User
+        from app.models import Assignment, Batch, BatchCourse, Course, Faculty, Student, User
 
         db.create_all()
 
@@ -79,28 +79,32 @@ def create_app(config_class: type | None = None) -> Flask:
                 db.session.flush()
             batches[year_label] = batch
 
-        if User.query.filter_by(email="admin@example.com").first():
-            click.echo("Demo admin already exists. Batches from 2022 to 2025 have been seeded.")
+        if User.query.filter_by(email="student@example.com").first():
+            click.echo("Demo data already exists. Batches from 2022 to 2025 have been seeded.")
             db.session.commit()
             return
 
-        admin = User(
-            email="admin@example.com",
-            password_hash=generate_password_hash("admin123"),
-            full_name="Demo Admin",
-            role="Admin",
-            department="Computer Science",
-        )
-        db.session.add(admin)
-        db.session.flush()
         batch = batches["2024"]
+        fac_pw = generate_password_hash("faculty123")
+        fac_id = "DEMO-FAC-1"
+        fac = Faculty(
+            id=fac_id,
+            email="faculty@example.com",
+            password_hash=fac_pw,
+            full_name="Demo Faculty",
+            department="Computer Science",
+            teaching_load_hours=6,
+        )
+        db.session.add(fac)
+        db.session.flush()
         staff = User(
             email="faculty@example.com",
-            password_hash=generate_password_hash("faculty123"),
+            password_hash=fac_pw,
             full_name="Demo Faculty",
             role="Staff",
             department="Computer Science",
             teaching_load_hours=6,
+            faculty_record_id=fac_id,
         )
         db.session.add(staff)
         db.session.flush()
@@ -146,12 +150,13 @@ def create_app(config_class: type | None = None) -> Flask:
         )
         db.session.commit()
         click.echo(
-            "Seeded: admin@example.com / admin123, faculty@example.com / faculty123, student@example.com / student123"
+            "Seeded: faculty@example.com / faculty123, student@example.com / student123. "
+            "Admin: set ADMIN_1_EMAIL / ADMIN_1_PASSWORD (or legacy ADMIN_EMAIL / ADMIN_PASSWORD) in backend/.env — not stored in DB."
         )
 
     @app.cli.command("sync-db-checks")
     def sync_db_checks():
-        """PostgreSQL: recreate users.ck_users_role so Admin is allowed (fixes admin self-register on older DBs)."""
+        """PostgreSQL: recreate users.ck_users_role so Admin role is allowed on older DBs."""
         from sqlalchemy import text
 
         url = str(db.engine.url)

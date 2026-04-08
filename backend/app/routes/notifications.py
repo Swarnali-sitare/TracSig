@@ -25,6 +25,8 @@ def _serialize(n: Notification) -> dict:
 @notifications_bp.get("")
 @require_auth
 def list_notifications():
+    if getattr(g, "env_admin", False):
+        return jsonify({"items": []})
     unread_only = (request.args.get("unread_only") or "").lower() in ("1", "true", "yes")
     q = Notification.query.filter_by(user_id=g.current_user.id).order_by(Notification.created_at.desc())
     if unread_only:
@@ -36,6 +38,8 @@ def list_notifications():
 @notifications_bp.patch("/<int:nid>/read")
 @require_auth
 def mark_read(nid: int):
+    if getattr(g, "env_admin", False):
+        raise ApiError("NOT_FOUND", "Notification not found", 404)
     n = Notification.query.filter_by(id=nid, user_id=g.current_user.id).first()
     if not n:
         raise ApiError("NOT_FOUND", "Notification not found", 404)
@@ -47,6 +51,8 @@ def mark_read(nid: int):
 @notifications_bp.patch("/read-all")
 @require_auth
 def mark_all_read():
+    if getattr(g, "env_admin", False):
+        return jsonify({"ok": True})
     Notification.query.filter_by(user_id=g.current_user.id, is_read=False).update({"is_read": True})
     db.session.commit()
     return jsonify({"ok": True})
@@ -55,6 +61,8 @@ def mark_all_read():
 @notifications_bp.delete("/<int:nid>")
 @require_auth
 def delete_one(nid: int):
+    if getattr(g, "env_admin", False):
+        raise ApiError("NOT_FOUND", "Notification not found", 404)
     n = Notification.query.filter_by(id=nid, user_id=g.current_user.id).first()
     if not n:
         raise ApiError("NOT_FOUND", "Notification not found", 404)
@@ -66,6 +74,8 @@ def delete_one(nid: int):
 @notifications_bp.delete("")
 @require_auth
 def delete_all():
+    if getattr(g, "env_admin", False):
+        return "", 204
     Notification.query.filter_by(user_id=g.current_user.id).delete()
     db.session.commit()
     return "", 204

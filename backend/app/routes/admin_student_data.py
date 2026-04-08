@@ -14,7 +14,7 @@ from werkzeug.security import generate_password_hash
 from app.decorators import require_roles
 from app.errors import ApiError
 from app.extensions import db
-from app.models import Batch, Student, User
+from app.models import Batch, Faculty, Student, User
 from app.routes.admin import admin_bp
 
 _STUDENT_ID_RE = re.compile(r"^[\w.-]{1,64}$")
@@ -138,8 +138,12 @@ def admin_create_managed_student():
         raise ApiError("VALIDATION_ERROR", "Password must be at least 6 characters", 422)
     if db.session.get(Student, sid):
         raise ApiError("CONFLICT", "Student ID already exists", 409)
-    if Student.query.filter_by(email=email).first() or User.query.filter_by(email=email).first():
-        raise ApiError("VALIDATION_ERROR", "Email already registered", 409)
+    if (
+        Student.query.filter_by(email=email).first()
+        or User.query.filter_by(email=email).first()
+        or Faculty.query.filter_by(email=email).first()
+    ):
+        raise ApiError("VALIDATION_ERROR", "Email already in use", 409)
     b = db.session.get(Batch, int(batch_id))
     if not b:
         raise ApiError("VALIDATION_ERROR", "Invalid batch_id", 422)
@@ -214,7 +218,11 @@ def admin_bulk_students():
         if db.session.get(Student, sid):
             skipped += 1
             continue
-        if Student.query.filter_by(email=email).first() or User.query.filter_by(email=email).first():
+        if (
+            Student.query.filter_by(email=email).first()
+            or User.query.filter_by(email=email).first()
+            or Faculty.query.filter_by(email=email).first()
+        ):
             skipped += 1
             continue
         try:

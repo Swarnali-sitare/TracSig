@@ -3,7 +3,6 @@ import { RootLayout } from "./components/layouts/RootLayout";
 import { AuthLayout } from "./components/layouts/AuthLayout";
 import { DashboardLayout } from "./components/layouts/DashboardLayout";
 import { Login } from "./components/auth/Login";
-import { Register } from "./components/auth/Register";
 
 // Student Pages
 import { StudentDashboard } from "./components/student/StudentDashboard";
@@ -40,7 +39,6 @@ export const router = createBrowserRouter([
         children: [
           { index: true, Component: Login },
           { path: "login", Component: Login },
-          { path: "register", Component: Register },
         ],
       },
       {

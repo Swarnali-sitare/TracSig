@@ -17,22 +17,36 @@ def _pg_role_constraint(conn) -> None:
     )
 
 
-def _pg_user_student_fk(conn) -> bool:
-    """Return True if the FK was added (or already present)."""
+def _pg_user_student_fk(conn) -> None:
     row = conn.execute(
         text(
             "SELECT 1 FROM pg_constraint WHERE conname = 'users_student_record_id_fkey' LIMIT 1"
         )
     ).first()
     if row:
-        return True
+        return
     conn.execute(
         text(
             "ALTER TABLE users ADD CONSTRAINT users_student_record_id_fkey "
             "FOREIGN KEY (student_record_id) REFERENCES students(id) ON DELETE CASCADE"
         )
     )
-    return True
+
+
+def _pg_user_faculty_fk(conn) -> None:
+    row = conn.execute(
+        text(
+            "SELECT 1 FROM pg_constraint WHERE conname = 'users_faculty_record_id_fkey' LIMIT 1"
+        )
+    ).first()
+    if row:
+        return
+    conn.execute(
+        text(
+            "ALTER TABLE users ADD CONSTRAINT users_faculty_record_id_fkey "
+            "FOREIGN KEY (faculty_record_id) REFERENCES faculty(id) ON DELETE CASCADE"
+        )
+    )
 
 
 def sync_database_schema() -> list[str]:
@@ -68,18 +82,54 @@ def sync_database_schema() -> list[str]:
             if "student_record_id" not in ucols:
                 conn.execute(text("ALTER TABLE users ADD COLUMN student_record_id VARCHAR(64)"))
                 lines.append("Added users.student_record_id")
+            if "faculty_record_id" not in ucols:
+                conn.execute(text("ALTER TABLE users ADD COLUMN faculty_record_id VARCHAR(64)"))
+                lines.append("Added users.faculty_record_id")
 
-    if dialect == "postgresql" and insp.has_table("users") and insp.has_table("students"):
+        if insp.has_table("refresh_tokens"):
+            rtcols = colset("refresh_tokens")
+            if "principal_kind" not in rtcols:
+                if dialect == "postgresql":
+                    conn.execute(
+                        text(
+                            "ALTER TABLE refresh_tokens ADD COLUMN principal_kind VARCHAR(20) "
+                            "NOT NULL DEFAULT 'user'"
+                        )
+                    )
+                else:
+                    conn.execute(text("ALTER TABLE refresh_tokens ADD COLUMN principal_kind VARCHAR(20) DEFAULT 'user'"))
+                lines.append("Added refresh_tokens.principal_kind")
+
+    if dialect == "postgresql":
         with engine.begin() as conn:
             try:
-                _pg_user_student_fk(conn)
-                lines.append("Ensured users.student_record_id → students.id foreign key.")
+                conn.execute(text("ALTER TABLE refresh_tokens ALTER COLUMN user_id DROP NOT NULL"))
+                lines.append("Made refresh_tokens.user_id nullable (env admin sessions).")
             except Exception as e:
-                lines.append(f"Note: could not add student_record FK: {e}")
-            _pg_role_constraint(conn)
-            lines.append("Updated users.ck_users_role for Student, Staff, Admin.")
+                lines.append(f"Note: refresh_tokens.user_id nullable: {e}")
+
+        if insp.has_table("users") and insp.has_table("students"):
+            with engine.begin() as conn:
+                try:
+                    _pg_user_student_fk(conn)
+                    lines.append("Ensured users.student_record_id → students.id foreign key.")
+                except Exception as e:
+                    lines.append(f"Note: could not add student_record FK: {e}")
+
+        if insp.has_table("users") and insp.has_table("faculty"):
+            with engine.begin() as conn:
+                try:
+                    _pg_user_faculty_fk(conn)
+                    lines.append("Ensured users.faculty_record_id → faculty.id foreign key.")
+                except Exception as e:
+                    lines.append(f"Note: could not add faculty_record FK: {e}")
+
+        if insp.has_table("users"):
+            with engine.begin() as conn:
+                _pg_role_constraint(conn)
+                lines.append("Updated users.ck_users_role for Student, Staff, Admin.")
 
     elif dialect == "sqlite":
-        lines.append("SQLite: role CHECK constraints cannot be auto-patched; use a fresh DB if Admin register still fails.")
+        lines.append("SQLite: for refresh token / FK changes, prefer a fresh DB (flask init-db) if issues persist.")
 
     return lines

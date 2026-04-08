@@ -1,6 +1,29 @@
 import os
 
 
+def _admin_accounts_from_env() -> list[dict]:
+    """
+    Env-only admin logins (no DB row). Each dict: email (lowercase), password (optional str), password_hash (optional str).
+    Legacy: ADMIN_EMAIL + ADMIN_PASSWORD or ADMIN_PASSWORD_HASH.
+    Numbered: ADMIN_1_EMAIL … ADMIN_20_EMAIL with ADMIN_N_PASSWORD or ADMIN_N_PASSWORD_HASH.
+    """
+    out: list[dict] = []
+    ae = (os.environ.get("ADMIN_EMAIL") or "").strip().lower()
+    ap = os.environ.get("ADMIN_PASSWORD")
+    ah = (os.environ.get("ADMIN_PASSWORD_HASH") or "").strip()
+    if ae and (ah or (ap is not None and ap != "")):
+        out.append({"email": ae, "password": ap, "password_hash": ah or None})
+    for i in range(1, 21):
+        ae = (os.environ.get(f"ADMIN_{i}_EMAIL") or "").strip().lower()
+        ap = os.environ.get(f"ADMIN_{i}_PASSWORD")
+        ah = (os.environ.get(f"ADMIN_{i}_PASSWORD_HASH") or "").strip()
+        if not ae:
+            continue
+        if ah or (ap is not None and ap != ""):
+            out.append({"email": ae, "password": ap, "password_hash": ah or None})
+    return out
+
+
 def _normalize_database_url(url: str) -> str:
     """Railway/Heroku-style URLs use postgres://; SQLAlchemy expects postgresql://."""
     if url.startswith("postgres://"):
@@ -35,6 +58,12 @@ class BaseConfig:
         if o.strip()
     ]
     MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH", str(2 * 1024 * 1024)))
+
+    # Env-only admin login (no users table row). ADMIN_ACCOUNTS merges legacy + ADMIN_N_* vars.
+    ADMIN_EMAIL = (os.environ.get("ADMIN_EMAIL") or "").strip().lower()
+    ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")
+    ADMIN_PASSWORD_HASH = os.environ.get("ADMIN_PASSWORD_HASH")
+    ADMIN_ACCOUNTS = _admin_accounts_from_env()
 
 
 class DevelopmentConfig(BaseConfig):

@@ -31,26 +31,6 @@ export async function loginRequest(email: string, password: string) {
   });
 }
 
-export async function registerRequest(body: {
-  name: string;
-  email: string;
-  password: string;
-  role: "Student" | "Staff" | "Admin";
-  batch_id?: number;
-  department?: string | null;
-  teaching_load_hours?: number | null;
-}) {
-  return apiRequest<{
-    user: AuthUserPublic;
-    access_token: string;
-    refresh_token: string;
-    expires_in: number;
-  }>("/api/auth/register", {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
-}
-
 export async function logoutRequest(refreshToken: string | null) {
   if (!refreshToken) return;
   try {
@@ -65,19 +45,6 @@ export async function logoutRequest(refreshToken: string | null) {
 
 export async function fetchMe() {
   return apiRequest<AuthMe>("/api/auth/me");
-}
-
-export type PublicBatch = {
-  id: number;
-  name: string;
-  year_label: string;
-  label: string;
-  start_date?: string | null;
-  end_date?: string | null;
-};
-
-export async function fetchPublicBatches() {
-  return apiRequest<{ items: PublicBatch[] }>("/api/auth/batches");
 }
 
 // ——— Notifications ———

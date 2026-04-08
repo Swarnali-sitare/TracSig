@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import uuid
+
 from flask import Blueprint, jsonify, request
 from werkzeug.security import generate_password_hash
 
 from app.decorators import require_roles
 from app.errors import ApiError
 from app.extensions import db
-from app.models import Assignment, Batch, BatchCourse, Course, Student, Submission, User
+from app.models import Assignment, Batch, BatchCourse, Course, Faculty, Student, Submission, User
 from app.services.assignment_helpers import assignments_for_student, record_status
 from app.services.dashboards import admin_dashboard
 
@@ -71,7 +73,11 @@ def create_student():
         raise ApiError("VALIDATION_ERROR", "name, email, password, batch_id required", 422)
     if len(password) < 6:
         raise ApiError("VALIDATION_ERROR", "Password too short", 422)
-    if User.query.filter_by(email=email).first() or Student.query.filter_by(email=email).first():
+    if (
+        User.query.filter_by(email=email).first()
+        or Student.query.filter_by(email=email).first()
+        or Faculty.query.filter_by(email=email).first()
+    ):
         raise ApiError("CONFLICT", "Email exists", 409)
     if not db.session.get(Batch, int(batch_id)):
         raise ApiError("VALIDATION_ERROR", "Invalid batch", 422)
@@ -164,18 +170,35 @@ def create_staff():
         raise ApiError("VALIDATION_ERROR", "name, email, password required", 422)
     if len(password) < 6:
         raise ApiError("VALIDATION_ERROR", "Password too short", 422)
-    if User.query.filter_by(email=email).first():
+    if (
+        User.query.filter_by(email=email).first()
+        or Student.query.filter_by(email=email).first()
+        or Faculty.query.filter_by(email=email).first()
+    ):
         raise ApiError("CONFLICT", "Email exists", 409)
     tl_int = int(tl) if tl is not None else None
     if tl_int is not None and (tl_int < 1 or tl_int > 20):
         raise ApiError("VALIDATION_ERROR", "teaching_load_hours 1-20", 422)
+    ph = generate_password_hash(password)
+    fac_id = f"FAC{uuid.uuid4().hex[:16]}"
+    fac = Faculty(
+        id=fac_id,
+        email=email,
+        password_hash=ph,
+        full_name=name,
+        department=department,
+        teaching_load_hours=tl_int,
+    )
+    db.session.add(fac)
+    db.session.flush()
     u = User(
         email=email,
-        password_hash=generate_password_hash(password),
+        password_hash=ph,
         full_name=name,
         role="Staff",
         department=department,
         teaching_load_hours=tl_int,
+        faculty_record_id=fac_id,
     )
     db.session.add(u)
     db.session.commit()
@@ -209,6 +232,12 @@ def delete_staff(uid: int):
         raise ApiError("NOT_FOUND", "Staff not found", 404)
     if Course.query.filter_by(staff_id=u.id).first():
         raise ApiError("CONFLICT", "Staff still assigned to courses", 409)
+    if u.faculty_record_id:
+        fac = db.session.get(Faculty, u.faculty_record_id)
+        if fac:
+            db.session.delete(fac)
+            db.session.commit()
+            return "", 204
     db.session.delete(u)
     db.session.commit()
     return "", 204

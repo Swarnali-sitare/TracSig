@@ -12,7 +12,7 @@ class ApiError(Exception):
         self.details = details or []
 
 
-def register_error_handlers(app: Flask) -> None:
+def attach_error_handlers(app: Flask) -> None:
     @app.errorhandler(ApiError)
     def handle_api_error(err: ApiError):
         return (

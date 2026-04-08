@@ -9,6 +9,8 @@ from flask import current_app
 from app.extensions import db
 from app.models import RefreshToken, User
 
+ENV_ADMIN_SUB = "env_admin"
+
 
 def normalize_role(role: str) -> str:
     if role == "Teacher":
@@ -43,7 +45,44 @@ def issue_tokens(user: User) -> tuple[str, str, int]:
     access_token = jwt.encode(access_payload, secret, algorithm="HS256")
     refresh_token = jwt.encode(refresh_payload, secret, algorithm="HS256")
 
-    rt = RefreshToken(user_id=user.id, jti=jti, expires_at=refresh_exp)
+    rt = RefreshToken(user_id=user.id, principal_kind="user", jti=jti, expires_at=refresh_exp)
+    db.session.add(rt)
+    db.session.commit()
+
+    return access_token, refresh_token, access_exp
+
+
+def issue_tokens_env_admin(env_admin_email: str) -> tuple[str, str, int]:
+    """JWT + refresh row for administrator authenticated via ADMIN_* env accounts (no DB row)."""
+    now = datetime.now(timezone.utc)
+    access_exp = int(current_app.config["ACCESS_TOKEN_EXPIRES"])
+    refresh_days = int(current_app.config["REFRESH_TOKEN_EXPIRES_DAYS"])
+    email_claim = (env_admin_email or "").strip().lower()
+
+    access_payload = {
+        "sub": ENV_ADMIN_SUB,
+        "role": "Admin",
+        "type": "access",
+        "env_admin_email": email_claim,
+        "iat": int(now.timestamp()),
+        "exp": int((now + timedelta(seconds=access_exp)).timestamp()),
+    }
+    jti = str(uuid.uuid4())
+    refresh_exp = now + timedelta(days=refresh_days)
+    refresh_payload = {
+        "sub": ENV_ADMIN_SUB,
+        "role": "Admin",
+        "type": "refresh",
+        "env_admin_email": email_claim,
+        "jti": jti,
+        "iat": int(now.timestamp()),
+        "exp": int(refresh_exp.timestamp()),
+    }
+    secret = current_app.config["JWT_SECRET_KEY"]
+    access_token = jwt.encode(access_payload, secret, algorithm="HS256")
+    refresh_token = jwt.encode(refresh_payload, secret, algorithm="HS256")
+
+    rt = RefreshToken(user_id=None, principal_kind="env_admin", jti=jti, expires_at=refresh_exp)
     db.session.add(rt)
     db.session.commit()
 
@@ -93,11 +132,22 @@ def refresh_access_token(refresh_token_str: str) -> tuple[str, str, int]:
 
         raise ApiError("UNAUTHORIZED", "Refresh token expired", 401)
 
+    revoke_refresh_jti(jti)
+    if row.principal_kind == "env_admin":
+        env_mail = (payload.get("env_admin_email") or "").strip().lower()
+        if not env_mail:
+            env_mail = (current_app.config.get("ADMIN_EMAIL") or "").strip().lower()
+        return issue_tokens_env_admin(env_mail)
+
+    if not row.user_id:
+        from app.errors import ApiError
+
+        raise ApiError("UNAUTHORIZED", "Invalid refresh token", 401)
+
     user = db.session.get(User, row.user_id)
     if not user:
         from app.errors import ApiError
 
         raise ApiError("UNAUTHORIZED", "User not found", 401)
 
-    revoke_refresh_jti(jti)
     return issue_tokens(user)

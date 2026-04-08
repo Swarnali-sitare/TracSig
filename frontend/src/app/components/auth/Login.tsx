@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router";
+import { useNavigate } from "react-router";
 import { useAuth } from "../../context/AuthContext";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -94,21 +94,12 @@ export const Login = () => {
         </button>
       </form>
 
-      <div className="mt-6 text-center">
-        <p className="text-muted-foreground">
-          Don&apos;t have an account?{" "}
-          <Link to="/auth/register" className="text-accent-primary hover:underline">
-            Register
-          </Link>
-        </p>
-      </div>
-
       <div className="mt-8 rounded-lg border border-border bg-muted p-4">
-        <p className="mb-2 text-sm font-medium text-accent-primary">Demo credentials (after `flask seed-demo`):</p>
+        <p className="mb-2 text-sm font-medium text-accent-primary">Local demo (after `flask seed-demo`):</p>
         <ul className="space-y-1 text-xs text-muted-foreground">
           <li>Student: student@example.com / student123</li>
           <li>Faculty: faculty@example.com / faculty123</li>
-          <li>Admin: admin@example.com / admin123</li>
+          <li>Admin: use ADMIN_EMAIL and ADMIN_PASSWORD from backend `.env` (not created by seed)</li>
         </ul>
       </div>
     </div>

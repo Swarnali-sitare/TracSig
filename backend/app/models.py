@@ -38,6 +38,28 @@ class Student(db.Model):
     shadow_user = db.relationship("User", back_populates="student_record", uselist=False)
 
 
+class Faculty(db.Model):
+    """Faculty identity for login. Shadow `User` rows (role Staff) link via `faculty_record_id`."""
+
+    __tablename__ = "faculty"
+
+    id = db.Column(db.String(64), primary_key=True)
+    email = db.Column(db.String(255), unique=True, nullable=False, index=True)
+    password_hash = db.Column(db.Text, nullable=False)
+    full_name = db.Column(db.String(255), nullable=False)
+    department = db.Column(db.String(255), nullable=True)
+    teaching_load_hours = db.Column(db.SmallInteger, nullable=True)
+
+    shadow_user = db.relationship("User", back_populates="faculty_record", uselist=False)
+
+    __table_args__ = (
+        CheckConstraint(
+            "teaching_load_hours IS NULL OR (teaching_load_hours >= 1 AND teaching_load_hours <= 20)",
+            name="ck_faculty_teaching_load",
+        ),
+    )
+
+
 class User(db.Model):
     __tablename__ = "users"
 
@@ -55,6 +77,12 @@ class User(db.Model):
         nullable=True,
         unique=True,
     )
+    faculty_record_id = db.Column(
+        db.String(64),
+        db.ForeignKey("faculty.id", ondelete="CASCADE"),
+        nullable=True,
+        unique=True,
+    )
     created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = db.Column(
         db.DateTime(timezone=True),
@@ -65,6 +93,7 @@ class User(db.Model):
 
     batch = db.relationship("Batch", back_populates="users", foreign_keys=[batch_id])
     student_record = db.relationship("Student", back_populates="shadow_user", foreign_keys=[student_record_id])
+    faculty_record = db.relationship("Faculty", back_populates="shadow_user", foreign_keys=[faculty_record_id])
     courses_teaching = db.relationship("Course", back_populates="instructor", foreign_keys="Course.staff_id")
 
     __table_args__ = (
@@ -182,7 +211,8 @@ class RefreshToken(db.Model):
     __tablename__ = "refresh_tokens"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
+    principal_kind = db.Column(db.String(20), nullable=False, default="user")
     jti = db.Column(db.String(36), unique=True, nullable=False)
     expires_at = db.Column(db.DateTime(timezone=True), nullable=False)
     revoked_at = db.Column(db.DateTime(timezone=True), nullable=True)

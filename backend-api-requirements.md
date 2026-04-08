@@ -18,7 +18,7 @@ The file `frontend/src/app/types/apiRoles.ts` maps `faculty` ↔ legacy `Teacher
 
 - **Product:** TracSig — assignment tracking for students, creation/evaluation for staff, and org management for admins.
 - **Clients:** Single-page app (Vite/React), role-based areas: `/student/*`, `/faculty/*` (legacy `/staff/*` redirects to faculty), `/admin/*`, `/auth/*`.
-- **Auth:** Register and login collect email, password, name; register allows role **student** or **faculty** only (admin is not self-registered in UI). Session today is `localStorage` user JSON; production should use **HTTP-only cookies** and/or **Authorization: Bearer** with short-lived access JWT and refresh rotation.
+- **Auth:** **Closed system** — there is no public self-signup. **Login** only: admin credentials come from server environment (`ADMIN_EMAIL` / `ADMIN_PASSWORD` or `ADMIN_PASSWORD_HASH`); students and faculty must already exist in the database with matching password hashes. The SPA stores tokens in `localStorage`; production may use **HTTP-only cookies** and/or **Authorization: Bearer** with short-lived access JWT and refresh rotation.
 - **Core flows:** Admin maintains students, staff (faculty), courses, batches; staff creates assignments tied to courses; students see assignments filtered by active/closed (due date vs today in **local calendar day**); students save **server-side drafts** and submit text; staff lists submissions and evaluates after due date (UI blocks evaluate before due date); notifications in header (list, mark read, clear).
 - **Date rules:** Student assignment **display** status matches `frontend/src/app/utils/assignmentStatus.ts`: **Completed** = submitted; **Pending** = not submitted and due date ≥ today (due today counts as not passed); **Incomplete** = not submitted and due date before today. Backend should expose raw `due_date`, `submission_status`, and optionally a computed `display_status` for convenience.
 
@@ -164,7 +164,6 @@ Base URL: `/api`. All JSON bodies/responses use `Content-Type: application/json`
 
 | Method | Path | Auth | Role |
 |--------|------|------|------|
-| POST | `/api/auth/register` | No | — |
 | POST | `/api/auth/login` | No | — |
 | POST | `/api/auth/logout` | Refresh/access | Any |
 | POST | `/api/auth/refresh` | Refresh body/cookie | Any |
@@ -440,54 +439,23 @@ Backends should return structures that can feed the existing charts without UI c
 
 ## 8. Auth APIs
 
-### 8.1 `POST /api/auth/register`
-
-**Body:**
-
-```json
-{
-  "name": "string",
-  "email": "string",
-  "password": "string",
-  "role": "Student | Staff"
-}
-```
-
-**Validation:** Email unique; password min length **6** (matches `Register.tsx`). **Reject** `Admin` self-registration with `403` or `422`.
-
-**Response `201`:**
-
-```json
-{
-  "user": {
-    "id": 1,
-    "name": "string",
-    "email": "string",
-    "role": "Student"
-  },
-  "access_token": "string",
-  "refresh_token": "string",
-  "expires_in": 900
-}
-```
-
-### 8.2 `POST /api/auth/login`
+### 8.1 `POST /api/auth/login`
 
 **Body:** `{ "email", "password" }`. **Do not** trust client-sent role; role comes from DB.
 
-**Response `200`:** Same token envelope as register.
+**Response `200`:** `{ "user", "access_token", "refresh_token", "expires_in" }`. **401** with a generic invalid-credentials message if no match (try env admin, then student row, then faculty row).
 
-### 8.3 `POST /api/auth/refresh`
+### 8.2 `POST /api/auth/refresh`
 
 **Body:** `{ "refresh_token": "..." }` or refresh HttpOnly cookie.
 
 **Response `200`:** New access token (and rotated refresh if implemented).
 
-### 8.4 `POST /api/auth/logout`
+### 8.3 `POST /api/auth/logout`
 
 Revoke current refresh token / session. Idempotent `204`.
 
-### 8.5 `GET /api/auth/me`
+### 8.4 `GET /api/auth/me`
 
 **Response `200`:**
 
@@ -505,11 +473,11 @@ Revoke current refresh token / session. Idempotent `204`.
 
 Shape matches extending current `User` in `AuthContext.tsx` when integrated.
 
-### 8.6 `PATCH /api/auth/me`
+### 8.5 `PATCH /api/auth/me`
 
 **Body (partial):** `{ "name"?, "department"? }` — only fields allowed for role; students might not change batch via this endpoint (admin only).
 
-### 8.7 `PUT /api/auth/password`
+### 8.6 `PUT /api/auth/password`
 
 **Body:** `{ "current_password": "...", "new_password": "..." }`. Validates current hash; min length 6.
 
@@ -537,7 +505,7 @@ Shape matches extending current `User` in `AuthContext.tsx` when integrated.
 | 404 | `NOT_FOUND` | Resource id unknown |
 | 409 | `CONFLICT` | Duplicate email, illegal state transition |
 | 422 | `VALIDATION_ERROR` | Field validation (password length, marks range) |
-| 429 | `RATE_LIMITED` | Throttle login/register |
+| 429 | `RATE_LIMITED` | Throttle login |
 | 500 | `INTERNAL_ERROR` | Unhandled (log server-side; generic message to client) |
 
 ---
@@ -561,7 +529,7 @@ Shape matches extending current `User` in `AuthContext.tsx` when integrated.
 - **Input limits:** Max body size for assignment `content` (e.g. 512KB–2MB configurable).
 - **SQL injection:** Parameterized queries only (SQLAlchemy/psycopg).
 - **Authorization:** Central decorator/middleware checking role + resource ownership on every route.
-- **Rate limiting:** Login/register endpoints.
+- **Rate limiting:** Login endpoint.
 - **Admin actions:** Auditable (`audit_log` recommended).
 
 ---
@@ -584,7 +552,7 @@ backend/
     services/            # dashboards, notifications, submission rules
     middleware/
       auth.py            # JWT decode, role check
-    errors.py            # register error handlers
+    errors.py            # attach_error_handlers()
   migrations/            # Alembic
   tests/
   wsgi.py

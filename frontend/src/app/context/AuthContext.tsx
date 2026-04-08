@@ -1,13 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { fromBackendRole } from "../types/apiRoles";
 import { clearStoredTokens, getStoredRefreshToken, setStoredTokens } from "../services/api";
-import {
-  fetchMe,
-  loginRequest,
-  logoutRequest,
-  registerRequest,
-  type AuthMe,
-} from "../services/tracsigApi";
+import { fetchMe, loginRequest, logoutRequest, type AuthMe } from "../services/tracsigApi";
 
 /** App / URL role. Backend returns Student | Staff | Admin — map with `fromBackendRole`. */
 export type UserRole = "student" | "faculty" | "admin";
@@ -39,13 +33,6 @@ const USER_KEY = "tracsig_user";
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<User>;
-  register: (
-    name: string,
-    email: string,
-    password: string,
-    role: UserRole,
-    options?: { batchId?: number; department?: string | null; teachingLoadHours?: number | null }
-  ) => Promise<User>;
   logout: () => void;
   isLoading: boolean;
   refreshUser: () => Promise<User | null>;
@@ -116,44 +103,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (
-    name: string,
-    email: string,
-    password: string,
-    role: UserRole,
-    options?: { batchId?: number; department?: string | null; teachingLoadHours?: number | null }
-  ): Promise<User> => {
-    setIsLoading(true);
-    try {
-      const apiRole: "Student" | "Staff" | "Admin" =
-        role === "faculty" ? "Staff" : role === "admin" ? "Admin" : "Student";
-      const body: Parameters<typeof registerRequest>[0] = {
-        name,
-        email,
-        password,
-        role: apiRole,
-      };
-      if (apiRole === "Student") {
-        if (options?.batchId == null) {
-          throw new Error("batch_id is required for students");
-        }
-        body.batch_id = options.batchId;
-      } else if (apiRole === "Staff") {
-        body.department = options?.department ?? undefined;
-        body.teaching_load_hours = options?.teachingLoadHours ?? undefined;
-      }
-      const data = await registerRequest(body);
-      setStoredTokens(data.access_token, data.refresh_token);
-      const u = await refreshUser();
-      if (!u) {
-        throw new Error("Failed to load profile");
-      }
-      return u;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const logout = () => {
     const rt = getStoredRefreshToken();
     void logoutRequest(rt);
@@ -163,7 +112,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isLoading, refreshUser }}>
+    <AuthContext.Provider value={{ user, login, logout, isLoading, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
