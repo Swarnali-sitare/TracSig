@@ -7,7 +7,7 @@ from datetime import date, datetime, timedelta, timezone
 from sqlalchemy import func, select
 
 from app.extensions import db
-from app.models import Assignment, BatchCourse, Course, Submission, User
+from app.models import Assignment, Course, Enrollment, Submission, User
 from app.services.assignment_helpers import (
     assignments_for_student,
     display_status,
@@ -136,7 +136,7 @@ def staff_dashboard(user: User) -> dict:
 
     batch_ids_set = set()
     for cid in course_ids:
-        for bc in BatchCourse.query.filter_by(course_id=cid).all():
+        for bc in Enrollment.query.filter_by(course_id=cid).all():
             batch_ids_set.add(bc.batch_id)
     total_students = (
         db.session.scalar(
@@ -166,7 +166,7 @@ def staff_dashboard(user: User) -> dict:
 
     pie_completed = pie_pending = pie_incomplete = 0
     for a in my_assignments:
-        batch_ids = [r.batch_id for r in BatchCourse.query.filter_by(course_id=a.course_id).all()]
+        batch_ids = [r.batch_id for r in Enrollment.query.filter_by(course_id=a.course_id).all()]
         if not batch_ids:
             continue
         studs = User.query.filter(User.role == "Student", User.batch_id.in_(batch_ids)).all()

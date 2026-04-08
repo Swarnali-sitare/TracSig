@@ -20,6 +20,7 @@ import { StudentData } from "./components/admin/StudentData";
 import { BatchStudentRemovePage } from "./components/admin/BatchStudentRemovePage";
 import { FacultyManagement } from "./components/admin/FacultyManagement";
 import { CourseManagement } from "./components/admin/CourseManagement";
+import { EnrollmentsManagement } from "./components/admin/EnrollmentsManagement";
 
 /** Old `/staff/*` URLs → `/faculty/*` */
 function RedirectStaffRoutesToFaculty() {
@@ -80,6 +81,7 @@ export const router = createBrowserRouter([
           { path: "staff", element: <Navigate to="/admin/faculty" replace /> },
           { path: "faculty", Component: FacultyManagement },
           { path: "courses", Component: CourseManagement },
+          { path: "enrollments", Component: EnrollmentsManagement },
         ],
       },
     ],

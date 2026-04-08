@@ -14,6 +14,7 @@ import {
   CircleDot,
   CheckCircle2,
   TableProperties,
+  Link2,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -59,6 +60,7 @@ export const Sidebar = ({ isOpen }: SidebarProps) => {
     { icon: TableProperties, label: "Student Data", path: "/admin/student-data" },
     { icon: UserCheck, label: "Faculty", path: "/admin/faculty" },
     { icon: BookOpen, label: "Courses", path: "/admin/courses" },
+    { icon: Link2, label: "Enrollments", path: "/admin/enrollments" },
   ];
 
   const getMenu = () => {

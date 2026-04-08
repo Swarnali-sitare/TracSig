@@ -219,6 +219,29 @@ export async function fetchAdminCourses() {
   return apiRequest<{ items: unknown[] }>("/api/admin/courses");
 }
 
+export type AdminEnrollmentRow = {
+  id: number;
+  batch_name: string;
+  course_name: string;
+  batch_start_date: string | null;
+  batch_end_date: string | null;
+};
+
+export async function fetchAdminEnrollments() {
+  return apiRequest<{ items: AdminEnrollmentRow[] }>("/api/admin/enrollment");
+}
+
+export async function createAdminEnrollment(body: { batch_id: number; course_id: number }) {
+  return apiRequest<{ id: number }>("/api/admin/enrollment", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deleteAdminEnrollment(id: number) {
+  await apiRequest(`/api/admin/enrollment/${id}`, { method: "DELETE" });
+}
+
 export async function createAdminCourse(body: {
   code: string;
   name: string;

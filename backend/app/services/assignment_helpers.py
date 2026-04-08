@@ -24,9 +24,9 @@ def display_status(due: date, sub: Submission | None) -> str:
 def student_course_ids(batch_id: int | None) -> list[int]:
     if not batch_id:
         return []
-    from app.models import BatchCourse
+    from app.models import Enrollment
 
-    rows = BatchCourse.query.filter_by(batch_id=batch_id).all()
+    rows = Enrollment.query.filter_by(batch_id=batch_id).all()
     return [r.course_id for r in rows]
 
 
@@ -52,9 +52,9 @@ def eligible_students_for_course(course_id: int) -> int:
     from sqlalchemy import func, select
 
     from app.extensions import db
-    from app.models import BatchCourse, User
+    from app.models import Enrollment, User
 
-    batch_ids = db.session.scalars(select(BatchCourse.batch_id).where(BatchCourse.course_id == course_id)).all()
+    batch_ids = db.session.scalars(select(Enrollment.batch_id).where(Enrollment.course_id == course_id)).all()
     if not batch_ids:
         return 0
     return (

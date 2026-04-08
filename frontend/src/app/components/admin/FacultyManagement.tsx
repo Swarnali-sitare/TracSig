@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../ui/dialog";
+import { PasswordInputWithToggle } from "../common/PasswordInputWithToggle";
 
 type StaffRow = {
   id: number;
@@ -414,21 +415,17 @@ export const FacultyManagement = () => {
                   className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors disabled:opacity-50"
                 />
               </div>
-              <div>
-                <label className="block mb-2 text-foreground">
-                  New password (optional)
-                </label>
-                <input
-                  type="password"
-                  value={editForm.password}
-                  onChange={(e) =>
-                    setEditForm((f) => ({ ...f, password: e.target.value }))
-                  }
-                  disabled={editSubmitting}
-                  className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors disabled:opacity-50"
-                  placeholder="Leave blank to keep current"
-                />
-              </div>
+              <PasswordInputWithToggle
+                id="faculty-edit-password"
+                label="New password (optional)"
+                value={editForm.password}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, password: e.target.value }))
+                }
+                disabled={editSubmitting}
+                placeholder="Leave blank to keep current"
+                autoComplete="new-password"
+              />
               <div>
                 <label className="block mb-2 text-foreground">
                   Teaching load (hours/week, optional)
@@ -500,18 +497,16 @@ export const FacultyManagement = () => {
                   placeholder="Enter email"
                 />
               </div>
-              <div>
-                <label className="block mb-2 text-foreground">Password</label>
-                <input
-                  type="password"
-                  value={form.password}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, password: e.target.value }))
-                  }
-                  className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
-                  placeholder="Min 6 characters"
-                />
-              </div>
+              <PasswordInputWithToggle
+                id="faculty-add-password"
+                label="Password"
+                value={form.password}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, password: e.target.value }))
+                }
+                placeholder="Min 6 characters"
+                autoComplete="new-password"
+              />
               <div>
                 <label className="block mb-2 text-foreground">
                   Teaching Load (hours/week, optional)

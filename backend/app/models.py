@@ -114,6 +114,7 @@ class Course(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     code = db.Column(db.String(32), unique=True, nullable=False)
     name = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=True)
     credits = db.Column(db.SmallInteger, nullable=False)
     staff_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
     created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
@@ -130,11 +131,19 @@ class Course(db.Model):
     __table_args__ = (CheckConstraint("credits >= 1 AND credits <= 6", name="ck_course_credits"),)
 
 
-class BatchCourse(db.Model):
-    __tablename__ = "batch_courses"
+class Enrollment(db.Model):
+    """Batch–course link: all students in the batch are enrolled in the course."""
 
-    batch_id = db.Column(db.Integer, db.ForeignKey("batches.id", ondelete="CASCADE"), primary_key=True)
-    course_id = db.Column(db.Integer, db.ForeignKey("courses.id", ondelete="CASCADE"), primary_key=True)
+    __tablename__ = "enrollments"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    batch_id = db.Column(db.Integer, db.ForeignKey("batches.id", ondelete="CASCADE"), nullable=False, index=True)
+    course_id = db.Column(db.Integer, db.ForeignKey("courses.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    batch = db.relationship("Batch", backref=db.backref("enrollments", lazy="dynamic"))
+    course = db.relationship("Course", backref=db.backref("enrollments", lazy="dynamic"))
+
+    __table_args__ = (UniqueConstraint("batch_id", "course_id", name="uq_enrollment_batch_course"),)
 
 
 class Assignment(db.Model):

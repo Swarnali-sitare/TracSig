@@ -101,6 +101,12 @@ def sync_database_schema() -> list[str]:
                 conn.execute(text("ALTER TABLE users ADD COLUMN faculty_record_id VARCHAR(64)"))
                 lines.append("Added users.faculty_record_id")
 
+        if insp.has_table("courses"):
+            ccols = colset("courses")
+            if "description" not in ccols:
+                conn.execute(text("ALTER TABLE courses ADD COLUMN description TEXT"))
+                lines.append("Added courses.description")
+
         if insp.has_table("refresh_tokens"):
             rtcols = colset("refresh_tokens")
             if "principal_kind" not in rtcols:
@@ -146,5 +152,28 @@ def sync_database_schema() -> list[str]:
 
     elif dialect == "sqlite":
         lines.append("SQLite: for refresh token / FK changes, prefer a fresh DB (flask init-db) if issues persist.")
+
+    # Legacy batch_courses (composite PK) → enrollments (surrogate id + unique batch+course)
+    insp_m = inspect(engine)
+    if insp_m.has_table("batch_courses") and insp_m.has_table("enrollments"):
+        with engine.begin() as conn:
+            if dialect == "postgresql":
+                conn.execute(
+                    text(
+                        "INSERT INTO enrollments (batch_id, course_id) "
+                        "SELECT batch_id, course_id FROM batch_courses "
+                        "ON CONFLICT (batch_id, course_id) DO NOTHING"
+                    )
+                )
+                conn.execute(text("DROP TABLE batch_courses CASCADE"))
+            else:
+                conn.execute(
+                    text(
+                        "INSERT OR IGNORE INTO enrollments (batch_id, course_id) "
+                        "SELECT batch_id, course_id FROM batch_courses"
+                    )
+                )
+                conn.execute(text("DROP TABLE batch_courses"))
+        lines.append("Migrated batch_courses into enrollments and dropped batch_courses.")
 
     return lines

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Search, Filter, UserPlus, Edit, Trash2 } from "lucide-react";
+import { PasswordInputWithToggle } from "../common/PasswordInputWithToggle";
 import { toast } from "sonner";
 import { ApiRequestError } from "../../services/api";
 import {
@@ -251,16 +252,13 @@ export const StudentManagement = () => {
                   placeholder="Enter email"
                 />
               </div>
-              <div>
-                <label className="block mb-2 text-foreground">Password</label>
-                <input
-                  type="password"
-                  value={form.password}
-                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-                  className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
-                  placeholder="Min 6 characters"
-                />
-              </div>
+              <PasswordInputWithToggle
+                id="admin-student-password"
+                label="Password"
+                value={form.password}
+                onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                placeholder="Min 6 characters"
+              />
               <div>
                 <label className="block mb-2 text-foreground">Batch</label>
                 <select

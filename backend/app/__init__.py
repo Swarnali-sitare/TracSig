@@ -65,7 +65,7 @@ def create_app(config_class: type | None = None) -> Flask:
 
         from werkzeug.security import generate_password_hash
 
-        from app.models import Assignment, Batch, BatchCourse, Course, Faculty, Student, User
+        from app.models import Assignment, Batch, Course, Enrollment, Faculty, Student, User
 
         db.create_all()
 
@@ -133,7 +133,7 @@ def create_app(config_class: type | None = None) -> Flask:
         )
         db.session.add(course)
         db.session.flush()
-        db.session.add(BatchCourse(batch_id=batch.id, course_id=course.id))
+        db.session.add(Enrollment(batch_id=batch.id, course_id=course.id))
         db.session.flush()
         db.session.add(
             Assignment(

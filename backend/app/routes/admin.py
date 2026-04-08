@@ -3,12 +3,14 @@ from __future__ import annotations
 import uuid
 
 from flask import Blueprint, jsonify, request
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
 from werkzeug.security import generate_password_hash
 
 from app.decorators import require_roles
 from app.errors import ApiError
 from app.extensions import db
-from app.models import Assignment, Batch, BatchCourse, Course, Faculty, Student, Submission, User
+from app.models import Assignment, Batch, Course, Enrollment, Faculty, Student, Submission, User
 from app.services.assignment_helpers import assignments_for_student, record_status
 from app.services.dashboards import admin_dashboard
 
@@ -310,13 +312,14 @@ def list_courses():
     for c in rows:
         inst = db.session.get(User, c.staff_id)
         enrolled = 0
-        for bc in BatchCourse.query.filter_by(course_id=c.id).all():
+        for bc in Enrollment.query.filter_by(course_id=c.id).all():
             enrolled += User.query.filter_by(role="Student", batch_id=bc.batch_id).count()
         items.append(
             {
                 "id": c.id,
                 "code": c.code,
                 "name": c.name,
+                "description": c.description,
                 "credits": c.credits,
                 "enrolled_students": enrolled,
                 "instructor_name": inst.full_name if inst else "",
@@ -347,7 +350,12 @@ def create_course():
         raise ApiError("VALIDATION_ERROR", "credits 1-6", 422)
     if Course.query.filter_by(code=code).first():
         raise ApiError("CONFLICT", "Course code exists", 409)
-    c = Course(code=code, name=name, credits=cr, staff_id=st.id)
+    desc_raw = data.get("description")
+    if desc_raw is None or (isinstance(desc_raw, str) and not desc_raw.strip()):
+        description = None
+    else:
+        description = str(desc_raw).strip() or None
+    c = Course(code=code, name=name, description=description, credits=cr, staff_id=st.id)
     db.session.add(c)
     db.session.commit()
     return jsonify({"id": c.id}), 201
@@ -361,13 +369,14 @@ def get_course(cid: int):
         raise ApiError("NOT_FOUND", "Course not found", 404)
     inst = db.session.get(User, c.staff_id)
     enrolled = 0
-    for bc in BatchCourse.query.filter_by(course_id=c.id).all():
+    for bc in Enrollment.query.filter_by(course_id=c.id).all():
         enrolled += User.query.filter_by(role="Student", batch_id=bc.batch_id).count()
     return jsonify(
         {
             "id": c.id,
             "code": c.code,
             "name": c.name,
+            "description": c.description,
             "credits": c.credits,
             "enrolled_students": enrolled,
             "instructor_name": inst.full_name if inst else "",
@@ -383,7 +392,7 @@ def patch_course(cid: int):
     if not c:
         raise ApiError("NOT_FOUND", "Course not found", 404)
     data = request.get_json(silent=True) or {}
-    allowed_keys = {"code", "name", "credits", "staff_id"}
+    allowed_keys = {"code", "name", "description", "credits", "staff_id"}
     if not (set(data.keys()) & allowed_keys):
         raise ApiError("VALIDATION_ERROR", "No fields to update", 422)
 
@@ -400,6 +409,12 @@ def patch_course(cid: int):
         if not name:
             raise ApiError("VALIDATION_ERROR", "name cannot be empty", 422)
         c.name = name
+
+    if "description" in data:
+        raw = data.get("description")
+        c.description = (
+            str(raw).strip() if raw is not None and str(raw).strip() != "" else None
+        )
 
     if "credits" in data:
         try:
@@ -457,6 +472,70 @@ def create_batch():
     db.session.flush()
     course_ids = data.get("course_ids") or []
     for cid in course_ids:
-        db.session.add(BatchCourse(batch_id=b.id, course_id=int(cid)))
+        db.session.add(Enrollment(batch_id=b.id, course_id=int(cid)))
     db.session.commit()
     return jsonify({"id": b.id}), 201
+
+
+@admin_bp.post("/enrollment")
+@require_roles("Admin")
+def create_enrollment():
+    data = request.get_json(silent=True) or {}
+    batch_id = data.get("batch_id")
+    course_id = data.get("course_id")
+    if batch_id is None or course_id is None:
+        raise ApiError("VALIDATION_ERROR", "batch_id and course_id are required", 422)
+    try:
+        bid = int(batch_id)
+        cid = int(course_id)
+    except (TypeError, ValueError) as e:
+        raise ApiError("VALIDATION_ERROR", "batch_id and course_id must be integers", 422) from e
+    if not db.session.get(Batch, bid):
+        raise ApiError("VALIDATION_ERROR", "Batch not found", 422)
+    if not db.session.get(Course, cid):
+        raise ApiError("VALIDATION_ERROR", "Course not found", 422)
+    if Enrollment.query.filter_by(batch_id=bid, course_id=cid).first():
+        raise ApiError("CONFLICT", "Course is already assigned to this batch", 409)
+    row = Enrollment(batch_id=bid, course_id=cid)
+    db.session.add(row)
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        raise ApiError("CONFLICT", "Course is already assigned to this batch", 409) from None
+    return jsonify({"id": row.id}), 201
+
+
+@admin_bp.get("/enrollment")
+@require_roles("Admin")
+def list_enrollments():
+    rows = (
+        Enrollment.query.options(joinedload(Enrollment.batch), joinedload(Enrollment.course))
+        .order_by(Enrollment.id.asc())
+        .all()
+    )
+    items = []
+    for e in rows:
+        b = e.batch
+        c = e.course
+        items.append(
+            {
+                "id": e.id,
+                "batch_name": b.name if b else "",
+                "course_name": c.name if c else "",
+                "batch_start_date": b.start_date.isoformat() if b and b.start_date else None,
+                "batch_end_date": b.end_date.isoformat() if b and b.end_date else None,
+            }
+        )
+    return jsonify({"items": items})
+
+
+@admin_bp.delete("/enrollment/<int:eid>")
+@require_roles("Admin")
+def delete_enrollment(eid: int):
+    row = db.session.get(Enrollment, eid)
+    if not row:
+        raise ApiError("NOT_FOUND", "Enrollment not found", 404)
+    db.session.delete(row)
+    db.session.commit()
+    return "", 204

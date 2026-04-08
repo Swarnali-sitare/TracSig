@@ -25,6 +25,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import { PasswordInputWithToggle } from "../common/PasswordInputWithToggle";
 
 function formatDisplayDate(iso: string | null): string {
   if (!iso) return "—";
@@ -527,15 +528,15 @@ export const StudentData = () => {
                 className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none"
               />
             </div>
-            <div>
-              <label className="block mb-2 text-sm text-foreground">Password</label>
-              <input
-                type="password"
-                value={addForm.password}
-                onChange={(e) => setAddForm((f) => ({ ...f, password: e.target.value }))}
-                className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none"
-              />
-            </div>
+            <PasswordInputWithToggle
+              id="student-data-add-password"
+              label="Password"
+              labelClassName="block mb-2 text-sm text-foreground"
+              variant="adminPlain"
+              value={addForm.password}
+              onChange={(e) => setAddForm((f) => ({ ...f, password: e.target.value }))}
+              autoComplete="new-password"
+            />
           </div>
           <DialogFooter>
             <button

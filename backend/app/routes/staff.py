@@ -7,7 +7,7 @@ from flask import Blueprint, g, jsonify, request
 from app.decorators import require_roles
 from app.errors import ApiError
 from app.extensions import db
-from app.models import Assignment, BatchCourse, Course, Submission, User
+from app.models import Assignment, Course, Enrollment, Submission, User
 from app.services.assignment_helpers import eligible_students_for_course, submitted_count_for_assignment
 from app.services.dashboards import staff_dashboard
 from app.services.notify import create_notification
@@ -62,7 +62,7 @@ def create_assignment():
     )
     db.session.add(a)
     db.session.flush()
-    batch_ids = [r.batch_id for r in BatchCourse.query.filter_by(course_id=course.id).all()]
+    batch_ids = [r.batch_id for r in Enrollment.query.filter_by(course_id=course.id).all()]
     for bid in batch_ids:
         for stu in User.query.filter_by(role="Student", batch_id=bid).all():
             create_notification(
@@ -235,7 +235,7 @@ def students_progress():
 
     student_ids: set[int] = set()
     for c in target_courses:
-        for bc in BatchCourse.query.filter_by(course_id=c.id).all():
+        for bc in Enrollment.query.filter_by(course_id=c.id).all():
             for u in User.query.filter_by(role="Student", batch_id=bc.batch_id).all():
                 student_ids.add(u.id)
 
