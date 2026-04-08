@@ -58,7 +58,6 @@ CREATE TABLE users (
   password_hash   TEXT         NOT NULL,
   full_name       VARCHAR(255) NOT NULL,
   role            user_role    NOT NULL,
-  department      VARCHAR(255),
   teaching_load_hours SMALLINT CHECK (teaching_load_hours IS NULL OR (teaching_load_hours >= 1 AND teaching_load_hours <= 20)),
   batch_id        BIGINT REFERENCES batches (id) ON DELETE SET NULL,
   created_at      TIMESTAMPTZ  NOT NULL DEFAULT now(),
@@ -74,7 +73,6 @@ CREATE TABLE courses (
   id           BIGSERIAL PRIMARY KEY,
   code         VARCHAR(32)  NOT NULL UNIQUE,
   name         VARCHAR(255) NOT NULL,
-  department   VARCHAR(255) NOT NULL,
   credits      SMALLINT      NOT NULL CHECK (credits >= 1 AND credits <= 6),
   staff_id     BIGINT       NOT NULL REFERENCES users (id) ON DELETE RESTRICT,
   created_at   TIMESTAMPTZ  NOT NULL DEFAULT now(),
@@ -297,23 +295,23 @@ Query: `?course=CS201|all`. Rows:
 
 ### 4.7 Admin students
 
-**`GET /api/admin/students`** — Query: `?batch=2023|all&search=`. Row: `id`, `name`, `email`, `batch`, `department`, `progress_percent` (computed from submissions).
+**`GET /api/admin/students`** — Query: `?batch=2023|all&search=`. Row: `id`, `name`, `email`, `batch`, `progress_percent` (computed from submissions).
 
-**`POST /api/admin/students`:** `{ "name", "email", "password", "batch_id", "department" }` — creates `Student` role user.
+**`POST /api/admin/students`:** `{ "name", "email", "password", "batch_id" }` — creates `Student` role user.
 
 **`DELETE /api/admin/students/:id`** — hard delete or soft delete; block if FK conflicts.
 
 ### 4.8 Admin staff
 
-**`GET /api/admin/staff`:** Row: `id`, `name`, `email`, `department`, `courses` (codes array), `teaching_load_hours`.
+**`GET /api/admin/staff`:** Row: `id`, `name`, `email`, `courses` (codes array), `teaching_load_hours`.
 
-**`POST /api/admin/staff`:** `{ "name", "email", "password", "department", "teaching_load_hours" }`.
+**`POST /api/admin/staff`:** `{ "name", "email", "password", "teaching_load_hours" }`.
 
 ### 4.9 Admin courses
 
-**`GET /api/admin/courses`:** rows with `code`, `name`, `department`, `credits`, `enrolled_students` (count), `instructor_name`, `instructor_id`.
+**`GET /api/admin/courses`:** rows with `code`, `name`, `credits`, `enrolled_students` (count), `instructor_name`, `instructor_id`.
 
-**`POST /api/admin/courses`:** `{ "code", "name", "department", "credits", "staff_id" }`.
+**`POST /api/admin/courses`:** `{ "code", "name", "credits", "staff_id" }`.
 
 **`DELETE /api/admin/courses/:id`** — reject if assignments exist or return cascade policy.
 
@@ -361,7 +359,6 @@ Backends should return structures that can feed the existing charts without UI c
 - **Cards:** total students, total staff, total assignments system-wide, active courses count.
 - **Monthly assignments:** Assignments created per month (6 months).
 - **Completion trends:** Per month `% completed` vs `% pending` (define numerator/denominator clearly from submissions).
-- **Department statistics:** Join `users.department` / `courses.department` — table `{ department, students, faculty }`.
 - **Recent activity:** Feed from an `audit_log` table (recommended) or derived events: faculty added, course updated, batch created, assignment created — `{ id, action, actor_name, created_at }` with `created_at` ISO for client-relative formatting.
 
 ---
@@ -465,7 +462,6 @@ Revoke current refresh token / session. Idempotent `204`.
   "name": "string",
   "email": "string",
   "role": "Student | Staff | Admin",
-  "department": "string | null",
   "batch_id": 1,
   "batch_label": "2023"
 }
@@ -475,7 +471,7 @@ Shape matches extending current `User` in `AuthContext.tsx` when integrated.
 
 ### 8.5 `PATCH /api/auth/me`
 
-**Body (partial):** `{ "name"?, "department"? }` — only fields allowed for role; students might not change batch via this endpoint (admin only).
+**Body (partial):** `{ "name"? }` — display name only for regular users; env-configured admins cannot change profile via this endpoint.
 
 ### 8.6 `PUT /api/auth/password`
 

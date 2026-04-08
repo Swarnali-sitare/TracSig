@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Search, Plus, Edit, Trash2, BookOpen } from "lucide-react";
+import { Search, Plus, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ApiRequestError } from "../../services/api";
 import {
@@ -7,13 +7,13 @@ import {
   deleteAdminCourse,
   fetchAdminCourses,
   fetchAdminStaff,
+  updateAdminCourse,
 } from "../../services/tracsigApi";
 
 type CourseRow = {
   id: number;
   code: string;
   name: string;
-  department: string;
   credits: number;
   enrolled_students: number;
   instructor_name: string;
@@ -31,10 +31,18 @@ export const CourseManagement = () => {
   const [form, setForm] = useState({
     code: "",
     name: "",
-    department: "",
     credits: "4",
     staff_id: "",
   });
+
+  const [editCourseId, setEditCourseId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState({
+    code: "",
+    name: "",
+    credits: "4",
+    staff_id: "",
+  });
+  const [editSubmitting, setEditSubmitting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -58,8 +66,7 @@ export const CourseManagement = () => {
   const filteredCourses = courses.filter(
     (c) =>
       c.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.department.toLowerCase().includes(searchTerm.toLowerCase())
+      c.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleDeleteCourse = async (id: number) => {
@@ -73,8 +80,49 @@ export const CourseManagement = () => {
     }
   };
 
+  const openEditCourse = (course: CourseRow) => {
+    setEditCourseId(course.id);
+    setEditForm({
+      code: course.code,
+      name: course.name,
+      credits: String(course.credits),
+      staff_id: String(course.instructor_id),
+    });
+  };
+
+  const handleUpdateCourse = async () => {
+    if (editCourseId == null) return;
+    if (!editForm.code.trim() || !editForm.name.trim() || !editForm.staff_id) {
+      toast.error("Fill all required fields");
+      return;
+    }
+    const cr = Number(editForm.credits);
+    if (Number.isNaN(cr) || cr < 1 || cr > 6) {
+      toast.error("Credits must be 1–6");
+      return;
+    }
+    setEditSubmitting(true);
+    try {
+      await updateAdminCourse(editCourseId, {
+        code: editForm.code.trim(),
+        name: editForm.name.trim(),
+        credits: cr,
+        staff_id: Number(editForm.staff_id),
+      });
+      toast.success("Course updated successfully");
+      setEditCourseId(null);
+      setEditForm({ code: "", name: "", credits: "4", staff_id: "" });
+      await load();
+    } catch (e) {
+      if (e instanceof ApiRequestError) toast.error(e.message);
+      else toast.error("Could not update course");
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
   const handleAddCourse = async () => {
-    if (!form.code.trim() || !form.name.trim() || !form.department.trim() || !form.staff_id) {
+    if (!form.code.trim() || !form.name.trim() || !form.staff_id) {
       toast.error("Fill all required fields");
       return;
     }
@@ -87,22 +135,18 @@ export const CourseManagement = () => {
       await createAdminCourse({
         code: form.code.trim(),
         name: form.name.trim(),
-        department: form.department.trim(),
         credits: cr,
         staff_id: Number(form.staff_id),
       });
       toast.success("Course added successfully");
       setShowAddCourse(false);
-      setForm({ code: "", name: "", department: "", credits: "4", staff_id: "" });
+      setForm({ code: "", name: "", credits: "4", staff_id: "" });
       await load();
     } catch (e) {
       if (e instanceof ApiRequestError) toast.error(e.message);
       else toast.error("Could not create course");
     }
   };
-
-  const totalStudents = courses.reduce((acc, c) => acc + c.enrolled_students, 0);
-  const totalCredits = courses.reduce((acc, c) => acc + c.credits, 0);
 
   if (loading) {
     return (
@@ -150,9 +194,6 @@ export const CourseManagement = () => {
                   Course Name
                 </th>
                 <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
-                  Department
-                </th>
-                <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
                   Credits
                 </th>
                 <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
@@ -169,7 +210,7 @@ export const CourseManagement = () => {
             <tbody>
               {filteredCourses.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-muted-foreground">
+                  <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">
                     No courses found.
                   </td>
                 </tr>
@@ -187,7 +228,6 @@ export const CourseManagement = () => {
                     <td className="px-6 py-4 text-foreground" style={{ fontWeight: 600 }}>
                       {course.name}
                     </td>
-                    <td className="px-6 py-4 text-muted-foreground">{course.department}</td>
                     <td className="px-6 py-4 text-muted-foreground">{course.credits}</td>
                     <td className="px-6 py-4 text-muted-foreground">{course.enrolled_students}</td>
                     <td className="px-6 py-4 text-muted-foreground">{course.instructor_name}</td>
@@ -195,9 +235,10 @@ export const CourseManagement = () => {
                       <div className="flex gap-2">
                         <button
                           type="button"
-                          className="p-2 hover:bg-muted rounded-lg transition-colors opacity-50 cursor-not-allowed"
-                          title="Edit not available via API"
-                          disabled
+                          onClick={() => openEditCourse(course)}
+                          disabled={editSubmitting}
+                          className="p-2 hover:bg-muted rounded-lg transition-colors disabled:opacity-50"
+                          title="Edit course"
                         >
                           <Edit className="w-4 h-4 text-accent-primary" />
                         </button>
@@ -218,35 +259,83 @@ export const CourseManagement = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
-        <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
-          <div className="flex items-center gap-3 mb-2">
-            <BookOpen className="w-8 h-8 text-accent-primary" />
-            <p className="text-muted-foreground">Total Courses</p>
+      {editCourseId != null && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-border">
+              <h2 className="text-foreground">Edit Course</h2>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block mb-2 text-foreground">Course Code</label>
+                <input
+                  type="text"
+                  value={editForm.code}
+                  onChange={(e) => setEditForm((f) => ({ ...f, code: e.target.value }))}
+                  disabled={editSubmitting}
+                  className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors disabled:opacity-50"
+                />
+              </div>
+              <div>
+                <label className="block mb-2 text-foreground">Course Name</label>
+                <input
+                  type="text"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                  disabled={editSubmitting}
+                  className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors disabled:opacity-50"
+                />
+              </div>
+              <div>
+                <label className="block mb-2 text-foreground">Credits (1–6)</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="6"
+                  value={editForm.credits}
+                  onChange={(e) => setEditForm((f) => ({ ...f, credits: e.target.value }))}
+                  disabled={editSubmitting}
+                  className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors disabled:opacity-50"
+                />
+              </div>
+              <div>
+                <label className="block mb-2 text-foreground">Instructor</label>
+                <select
+                  value={editForm.staff_id}
+                  onChange={(e) => setEditForm((f) => ({ ...f, staff_id: e.target.value }))}
+                  disabled={editSubmitting}
+                  className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors disabled:opacity-50"
+                >
+                  <option value="">Select instructor</option>
+                  {staffList.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="p-6 border-t border-border flex justify-end gap-3">
+              <button
+                type="button"
+                disabled={editSubmitting}
+                onClick={() => setEditCourseId(null)}
+                className="px-6 py-3 bg-muted text-foreground rounded-lg hover:bg-hover-bg transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={editSubmitting}
+                onClick={() => void handleUpdateCourse()}
+                className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-accent-hover transition-colors disabled:opacity-50"
+              >
+                {editSubmitting ? "Saving…" : "Save changes"}
+              </button>
+            </div>
           </div>
-          <p className="text-3xl text-accent-primary" style={{ fontWeight: 700 }}>
-            {courses.length}
-          </p>
         </div>
-        <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
-          <p className="text-muted-foreground mb-2">Enrolled (sum)</p>
-          <p className="text-3xl text-info" style={{ fontWeight: 700 }}>
-            {totalStudents}
-          </p>
-        </div>
-        <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
-          <p className="text-muted-foreground mb-2">Avg. Students/Course</p>
-          <p className="text-3xl text-warning" style={{ fontWeight: 700 }}>
-            {courses.length ? Math.round(totalStudents / courses.length) : 0}
-          </p>
-        </div>
-        <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
-          <p className="text-muted-foreground mb-2">Total Credits</p>
-          <p className="text-3xl text-accent-primary" style={{ fontWeight: 700 }}>
-            {totalCredits}
-          </p>
-        </div>
-      </div>
+      )}
 
       {showAddCourse && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -273,16 +362,6 @@ export const CourseManagement = () => {
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                   className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
                   placeholder="Enter course name"
-                />
-              </div>
-              <div>
-                <label className="block mb-2 text-foreground">Department</label>
-                <input
-                  type="text"
-                  value={form.department}
-                  onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))}
-                  className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
-                  placeholder="Department"
                 />
               </div>
               <div>

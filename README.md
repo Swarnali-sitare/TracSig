@@ -61,6 +61,8 @@ After model or column changes, align the database:
 ./venv/bin/flask sync-schema
 ```
 
+That command also drops legacy `department` columns from `users`, `faculty`, and `courses` when they still exist from older schemas.
+
 Optional demo rows (batches, faculty, student, course):
 
 ```bash

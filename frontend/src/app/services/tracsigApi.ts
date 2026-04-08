@@ -14,7 +14,6 @@ export type AuthUserPublic = {
 };
 
 export type AuthMe = AuthUserPublic & {
-  department: string | null;
   batch_id: number | null;
   batch_label: string | null;
 };
@@ -170,7 +169,6 @@ export async function createAdminStudent(body: {
   email: string;
   password: string;
   batch_id: number;
-  department?: string | null;
 }) {
   return apiRequest<{ id: number }>("/api/admin/students", {
     method: "POST",
@@ -190,7 +188,6 @@ export async function createAdminStaff(body: {
   name: string;
   email: string;
   password: string;
-  department?: string | null;
   teaching_load_hours?: number | null;
 }) {
   return apiRequest<{ id: number }>("/api/admin/staff", {
@@ -204,7 +201,6 @@ export async function updateAdminStaff(
   body: {
     name?: string;
     email?: string;
-    department?: string | null;
     teaching_load_hours?: number | null;
     password?: string;
   }
@@ -226,12 +222,26 @@ export async function fetchAdminCourses() {
 export async function createAdminCourse(body: {
   code: string;
   name: string;
-  department: string;
   credits: number;
   staff_id: number;
 }) {
   return apiRequest<{ id: number }>("/api/admin/courses", {
     method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function updateAdminCourse(
+  id: number,
+  body: {
+    code?: string;
+    name?: string;
+    credits?: number;
+    staff_id?: number;
+  }
+) {
+  return apiRequest<{ ok: boolean }>(`/api/admin/courses/${id}`, {
+    method: "PATCH",
     body: JSON.stringify(body),
   });
 }

@@ -20,7 +20,6 @@ type StaffRow = {
   id: number;
   name: string;
   email: string;
-  department: string | null;
   courses: string[];
   teaching_load_hours: number | null;
 };
@@ -34,7 +33,6 @@ export const FacultyManagement = () => {
     name: "",
     email: "",
     password: "",
-    department: "",
     teachingLoad: "",
   });
 
@@ -43,7 +41,6 @@ export const FacultyManagement = () => {
     name: "",
     email: "",
     password: "",
-    department: "",
     teachingLoad: "",
   });
   const [editSubmitting, setEditSubmitting] = useState(false);
@@ -75,8 +72,7 @@ export const FacultyManagement = () => {
   const filteredFaculty = facultyMembers.filter(
     (m) =>
       m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      m.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (m.department ?? "").toLowerCase().includes(searchTerm.toLowerCase()),
+      m.email.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const handleConfirmDeleteFaculty = async () => {
@@ -101,7 +97,6 @@ export const FacultyManagement = () => {
       name: member.name,
       email: member.email,
       password: "",
-      department: member.department ?? "",
       teachingLoad:
         member.teaching_load_hours != null
           ? String(member.teaching_load_hours)
@@ -137,7 +132,6 @@ export const FacultyManagement = () => {
       const body: Parameters<typeof updateAdminStaff>[1] = {
         name,
         email,
-        department: editForm.department.trim() || null,
         teaching_load_hours,
       };
       if (editForm.password.trim()) {
@@ -150,7 +144,6 @@ export const FacultyManagement = () => {
         name: "",
         email: "",
         password: "",
-        department: "",
         teachingLoad: "",
       });
       await load();
@@ -172,7 +165,6 @@ export const FacultyManagement = () => {
         name: form.name.trim(),
         email: form.email.trim(),
         password: form.password,
-        department: form.department.trim() || null,
         teaching_load_hours:
           form.teachingLoad.trim() !== ""
             ? Number(form.teachingLoad)
@@ -184,7 +176,6 @@ export const FacultyManagement = () => {
         name: "",
         email: "",
         password: "",
-        department: "",
         teachingLoad: "",
       });
       await load();
@@ -250,12 +241,6 @@ export const FacultyManagement = () => {
                   className="px-6 py-4 text-left text-foreground"
                   style={{ fontWeight: 600 }}
                 >
-                  Department
-                </th>
-                <th
-                  className="px-6 py-4 text-left text-foreground"
-                  style={{ fontWeight: 600 }}
-                >
                   Courses
                 </th>
                 <th
@@ -276,7 +261,7 @@ export const FacultyManagement = () => {
               {filteredFaculty.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={5}
                     className="px-6 py-8 text-center text-muted-foreground"
                   >
                     No faculty found.
@@ -296,9 +281,6 @@ export const FacultyManagement = () => {
                     </td>
                     <td className="px-6 py-4 text-muted-foreground">
                       {member.email}
-                    </td>
-                    <td className="px-6 py-4 text-muted-foreground">
-                      {member.department ?? "—"}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex gap-1 flex-wrap">
@@ -449,20 +431,6 @@ export const FacultyManagement = () => {
               </div>
               <div>
                 <label className="block mb-2 text-foreground">
-                  Department (optional)
-                </label>
-                <input
-                  type="text"
-                  value={editForm.department}
-                  onChange={(e) =>
-                    setEditForm((f) => ({ ...f, department: e.target.value }))
-                  }
-                  disabled={editSubmitting}
-                  className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors disabled:opacity-50"
-                />
-              </div>
-              <div>
-                <label className="block mb-2 text-foreground">
                   Teaching load (hours/week, optional)
                 </label>
                 <input
@@ -542,20 +510,6 @@ export const FacultyManagement = () => {
                   }
                   className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
                   placeholder="Min 6 characters"
-                />
-              </div>
-              <div>
-                <label className="block mb-2 text-foreground">
-                  Department (optional)
-                </label>
-                <input
-                  type="text"
-                  value={form.department}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, department: e.target.value }))
-                  }
-                  className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
-                  placeholder="Department"
                 />
               </div>
               <div>

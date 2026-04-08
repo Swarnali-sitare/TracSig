@@ -11,7 +11,6 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
-  department?: string | null;
   batchId?: number | null;
   batchLabel?: string | null;
 }
@@ -22,7 +21,6 @@ function meToUser(m: AuthMe): User {
     name: m.name,
     email: m.email,
     role: fromBackendRole(m.role),
-    department: m.department,
     batchId: m.batch_id,
     batchLabel: m.batch_label,
   };

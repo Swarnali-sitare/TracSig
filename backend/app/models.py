@@ -47,7 +47,6 @@ class Faculty(db.Model):
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.Text, nullable=False)
     full_name = db.Column(db.String(255), nullable=False)
-    department = db.Column(db.String(255), nullable=True)
     teaching_load_hours = db.Column(db.SmallInteger, nullable=True)
 
     shadow_user = db.relationship("User", back_populates="faculty_record", uselist=False)
@@ -68,7 +67,6 @@ class User(db.Model):
     password_hash = db.Column(db.Text, nullable=False)
     full_name = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), nullable=False, index=True)
-    department = db.Column(db.String(255), nullable=True)
     teaching_load_hours = db.Column(db.SmallInteger, nullable=True)
     batch_id = db.Column(db.Integer, db.ForeignKey("batches.id", ondelete="SET NULL"), nullable=True)
     student_record_id = db.Column(
@@ -116,7 +114,6 @@ class Course(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     code = db.Column(db.String(32), unique=True, nullable=False)
     name = db.Column(db.String(255), nullable=False)
-    department = db.Column(db.String(255), nullable=False)
     credits = db.Column(db.SmallInteger, nullable=False)
     staff_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
     created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)

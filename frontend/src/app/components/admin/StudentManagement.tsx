@@ -14,7 +14,6 @@ type StudentRow = {
   name: string;
   email: string;
   batch: string;
-  department: string | null;
   progress_percent: number;
 };
 
@@ -30,7 +29,6 @@ export const StudentManagement = () => {
     email: "",
     password: "",
     batch_id: "",
-    department: "",
   });
 
   const load = useCallback(async () => {
@@ -82,11 +80,10 @@ export const StudentManagement = () => {
         email: form.email.trim(),
         password: form.password,
         batch_id: Number(form.batch_id),
-        department: form.department.trim() || null,
       });
       toast.success("Student added successfully");
       setShowAddStudent(false);
-      setForm({ name: "", email: "", password: "", batch_id: "", department: "" });
+      setForm({ name: "", email: "", password: "", batch_id: "" });
       await load();
     } catch (e) {
       if (e instanceof ApiRequestError) toast.error(e.message);
@@ -160,9 +157,6 @@ export const StudentManagement = () => {
                   Batch
                 </th>
                 <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
-                  Department
-                </th>
-                <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
                   Progress
                 </th>
                 <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
@@ -173,7 +167,7 @@ export const StudentManagement = () => {
             <tbody>
               {students.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">
+                  <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">
                     No students match your filters.
                   </td>
                 </tr>
@@ -192,7 +186,6 @@ export const StudentManagement = () => {
                         {student.batch}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-muted-foreground">{student.department ?? "—"}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <div className="h-2 max-w-[100px] flex-1 overflow-hidden rounded-full bg-muted">
@@ -282,16 +275,6 @@ export const StudentManagement = () => {
                     </option>
                   ))}
                 </select>
-              </div>
-              <div>
-                <label className="block mb-2 text-foreground">Department (optional)</label>
-                <input
-                  type="text"
-                  value={form.department}
-                  onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))}
-                  className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
-                  placeholder="Department"
-                />
               </div>
             </div>
             <div className="p-6 border-t border-border flex justify-end gap-3">

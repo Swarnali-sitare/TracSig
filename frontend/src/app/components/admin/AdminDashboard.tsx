@@ -16,7 +16,6 @@ type AdminDash = {
   };
   monthly_assignments: { month: string; assignments: number }[];
   completion_trends: { month: string; completed: number; pending: number }[];
-  department_statistics: { department: string; students: number; faculty: number }[];
   recent_activity: { id: number; action: string; actor_name: string; created_at: string }[];
 };
 
@@ -85,7 +84,6 @@ export const AdminDashboard = () => {
 
   const monthlyAssignments = data.monthly_assignments ?? [];
   const completionTrends = data.completion_trends ?? [];
-  const departmentStats = data.department_statistics ?? [];
   const recentActivity = data.recent_activity ?? [];
 
   return (
@@ -152,52 +150,7 @@ export const AdminDashboard = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
-          <div className="p-6 border-b border-border">
-            <h3 className="text-foreground">Department Statistics</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-muted border-b border-border">
-                <tr>
-                  <th className="px-6 py-3 text-left text-foreground" style={{ fontWeight: 600 }}>
-                    Department
-                  </th>
-                  <th className="px-6 py-3 text-left text-foreground" style={{ fontWeight: 600 }}>
-                    Students
-                  </th>
-                  <th className="px-6 py-3 text-left text-foreground" style={{ fontWeight: 600 }}>
-                    Faculty
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {departmentStats.length === 0 ? (
-                  <tr>
-                    <td colSpan={3} className="px-6 py-6 text-center text-muted-foreground">
-                      No departments yet.
-                    </td>
-                  </tr>
-                ) : (
-                  departmentStats.map((dept, index) => (
-                    <tr
-                      key={`${dept.department}-${index}`}
-                      className="border-b border-border hover:bg-muted transition-colors"
-                    >
-                      <td className="px-6 py-3 text-foreground" style={{ fontWeight: 600 }}>
-                        {dept.department}
-                      </td>
-                      <td className="px-6 py-3 text-muted-foreground">{dept.students}</td>
-                      <td className="px-6 py-3 text-muted-foreground">{dept.faculty}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
+      <div className="grid grid-cols-1 gap-6">
         <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
           <h3 className="mb-4 text-foreground">Recent Activity</h3>
           <div className="space-y-4">

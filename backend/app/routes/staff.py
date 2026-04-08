@@ -26,7 +26,6 @@ def my_courses():
                     "id": c.id,
                     "code": c.code,
                     "name": c.name,
-                    "department": c.department,
                     "credits": c.credits,
                 }
                 for c in courses

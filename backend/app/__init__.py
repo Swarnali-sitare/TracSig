@@ -92,7 +92,6 @@ def create_app(config_class: type | None = None) -> Flask:
             email="faculty@example.com",
             password_hash=fac_pw,
             full_name="Demo Faculty",
-            department="Computer Science",
             teaching_load_hours=6,
         )
         db.session.add(fac)
@@ -102,7 +101,6 @@ def create_app(config_class: type | None = None) -> Flask:
             password_hash=fac_pw,
             full_name="Demo Faculty",
             role="Staff",
-            department="Computer Science",
             teaching_load_hours=6,
             faculty_record_id=fac_id,
         )
@@ -124,14 +122,12 @@ def create_app(config_class: type | None = None) -> Flask:
             full_name="Demo Student",
             role="Student",
             batch_id=batch.id,
-            department="Computer Science",
             student_record_id=student_row.id,
         )
         db.session.add(student)
         course = Course(
             code="CS201",
             name="Data Structures",
-            department="Computer Science",
             credits=4,
             staff_id=staff.id,
         )

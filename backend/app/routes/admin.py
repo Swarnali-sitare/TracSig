@@ -53,7 +53,6 @@ def list_students():
                 "name": u.full_name,
                 "email": u.email,
                 "batch": batch_label,
-                "department": u.department,
                 "progress_percent": _student_progress_percent(u),
             }
         )
@@ -68,7 +67,6 @@ def create_student():
     email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
     batch_id = data.get("batch_id")
-    department = (data.get("department") or "").strip() or None
     if not name or not email or not password or batch_id is None:
         raise ApiError("VALIDATION_ERROR", "name, email, password, batch_id required", 422)
     if len(password) < 6:
@@ -88,7 +86,6 @@ def create_student():
         full_name=name,
         role="Student",
         batch_id=int(batch_id),
-        department=department,
     )
     db.session.add(u)
     db.session.flush()
@@ -114,7 +111,6 @@ def get_student(uid: int):
             "email": u.email,
             "batch": batch_label,
             "batch_id": u.batch_id,
-            "department": u.department,
             "progress_percent": _student_progress_percent(u),
         }
     )
@@ -149,7 +145,6 @@ def list_staff():
                 "id": u.id,
                 "name": u.full_name,
                 "email": u.email,
-                "department": u.department,
                 "courses": codes,
                 "teaching_load_hours": u.teaching_load_hours,
             }
@@ -164,7 +159,6 @@ def create_staff():
     name = (data.get("name") or "").strip()
     email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
-    department = (data.get("department") or "").strip() or None
     tl = data.get("teaching_load_hours")
     if not name or not email or not password:
         raise ApiError("VALIDATION_ERROR", "name, email, password required", 422)
@@ -186,7 +180,6 @@ def create_staff():
         email=email,
         password_hash=ph,
         full_name=name,
-        department=department,
         teaching_load_hours=tl_int,
     )
     db.session.add(fac)
@@ -196,7 +189,6 @@ def create_staff():
         password_hash=ph,
         full_name=name,
         role="Staff",
-        department=department,
         teaching_load_hours=tl_int,
         faculty_record_id=fac_id,
     )
@@ -217,7 +209,6 @@ def get_staff(uid: int):
             "id": u.id,
             "name": u.full_name,
             "email": u.email,
-            "department": u.department,
             "courses": codes,
             "teaching_load_hours": u.teaching_load_hours,
         }
@@ -231,7 +222,7 @@ def patch_staff(uid: int):
     if not u:
         raise ApiError("NOT_FOUND", "Staff not found", 404)
     data = request.get_json(silent=True) or {}
-    allowed_keys = {"name", "email", "department", "teaching_load_hours", "password"}
+    allowed_keys = {"name", "email", "teaching_load_hours", "password"}
     if not (set(data.keys()) & allowed_keys):
         raise ApiError("VALIDATION_ERROR", "No fields to update", 422)
     fac = db.session.get(Faculty, u.faculty_record_id) if u.faculty_record_id else None
@@ -260,13 +251,6 @@ def patch_staff(uid: int):
         u.email = email
         if fac:
             fac.email = email
-
-    if "department" in data:
-        raw = data.get("department")
-        dept = str(raw).strip() if raw is not None and str(raw).strip() != "" else None
-        u.department = dept
-        if fac:
-            fac.department = dept
 
     if "teaching_load_hours" in data:
         tl = data.get("teaching_load_hours")
@@ -333,7 +317,6 @@ def list_courses():
                 "id": c.id,
                 "code": c.code,
                 "name": c.name,
-                "department": c.department,
                 "credits": c.credits,
                 "enrolled_students": enrolled,
                 "instructor_name": inst.full_name if inst else "",
@@ -349,11 +332,10 @@ def create_course():
     data = request.get_json(silent=True) or {}
     code = (data.get("code") or "").strip()
     name = (data.get("name") or "").strip()
-    department = (data.get("department") or "").strip()
     credits = data.get("credits")
     staff_id = data.get("staff_id")
-    if not code or not name or not department or credits is None or staff_id is None:
-        raise ApiError("VALIDATION_ERROR", "code, name, department, credits, staff_id required", 422)
+    if not code or not name or credits is None or staff_id is None:
+        raise ApiError("VALIDATION_ERROR", "code, name, credits, staff_id required", 422)
     st = db.session.get(User, int(staff_id))
     if not st or st.role != "Staff":
         raise ApiError("VALIDATION_ERROR", "staff_id must be a Staff user", 422)
@@ -365,7 +347,7 @@ def create_course():
         raise ApiError("VALIDATION_ERROR", "credits 1-6", 422)
     if Course.query.filter_by(code=code).first():
         raise ApiError("CONFLICT", "Course code exists", 409)
-    c = Course(code=code, name=name, department=department, credits=cr, staff_id=st.id)
+    c = Course(code=code, name=name, credits=cr, staff_id=st.id)
     db.session.add(c)
     db.session.commit()
     return jsonify({"id": c.id}), 201
@@ -386,13 +368,60 @@ def get_course(cid: int):
             "id": c.id,
             "code": c.code,
             "name": c.name,
-            "department": c.department,
             "credits": c.credits,
             "enrolled_students": enrolled,
             "instructor_name": inst.full_name if inst else "",
             "instructor_id": c.staff_id,
         }
     )
+
+
+@admin_bp.patch("/courses/<int:cid>")
+@require_roles("Admin")
+def patch_course(cid: int):
+    c = db.session.get(Course, cid)
+    if not c:
+        raise ApiError("NOT_FOUND", "Course not found", 404)
+    data = request.get_json(silent=True) or {}
+    allowed_keys = {"code", "name", "credits", "staff_id"}
+    if not (set(data.keys()) & allowed_keys):
+        raise ApiError("VALIDATION_ERROR", "No fields to update", 422)
+
+    if "code" in data:
+        code = (data.get("code") or "").strip()
+        if not code:
+            raise ApiError("VALIDATION_ERROR", "code cannot be empty", 422)
+        if Course.query.filter(Course.code == code, Course.id != c.id).first():
+            raise ApiError("CONFLICT", "Course code exists", 409)
+        c.code = code
+
+    if "name" in data:
+        name = (data.get("name") or "").strip()
+        if not name:
+            raise ApiError("VALIDATION_ERROR", "name cannot be empty", 422)
+        c.name = name
+
+    if "credits" in data:
+        try:
+            cr = int(data.get("credits"))
+        except (TypeError, ValueError) as e:
+            raise ApiError("VALIDATION_ERROR", "Invalid credits", 422) from e
+        if cr < 1 or cr > 6:
+            raise ApiError("VALIDATION_ERROR", "credits 1-6", 422)
+        c.credits = cr
+
+    if "staff_id" in data:
+        try:
+            sid = int(data.get("staff_id"))
+        except (TypeError, ValueError) as e:
+            raise ApiError("VALIDATION_ERROR", "staff_id must be an integer", 422) from e
+        st = db.session.get(User, sid)
+        if not st or st.role != "Staff":
+            raise ApiError("VALIDATION_ERROR", "staff_id must be a Staff user", 422)
+        c.staff_id = st.id
+
+    db.session.commit()
+    return jsonify({"ok": True})
 
 
 @admin_bp.delete("/courses/<int:cid>")

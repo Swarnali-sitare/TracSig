@@ -62,6 +62,21 @@ def sync_database_schema() -> list[str]:
 
     insp = inspect(engine)
 
+    # Legacy: department removed from models; drop column if an old DB still has it.
+    legacy_department_tables = ("users", "faculty", "courses")
+    with engine.begin() as conn:
+        for table in legacy_department_tables:
+            if not insp.has_table(table):
+                continue
+            tcols = {c["name"] for c in insp.get_columns(table)}
+            if "department" not in tcols:
+                continue
+            if dialect == "postgresql":
+                conn.execute(text(f'ALTER TABLE "{table}" DROP COLUMN IF EXISTS department'))
+            else:
+                conn.execute(text(f"ALTER TABLE {table} DROP COLUMN department"))
+            lines.append(f"Dropped legacy column {table}.department")
+
     def colset(table: str) -> set[str]:
         if not insp.has_table(table):
             return set()

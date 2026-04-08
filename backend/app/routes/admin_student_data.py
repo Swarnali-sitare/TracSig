@@ -50,7 +50,6 @@ def _create_shadow_user_for_student(st: Student) -> User:
         full_name=st.name,
         role="Student",
         batch_id=st.batch_id,
-        department=None,
         student_record_id=st.id,
     )
     db.session.add(u)

@@ -64,7 +64,6 @@ def _user_me(u: User) -> dict:
         "name": u.full_name,
         "email": u.email,
         "role": normalize_role(u.role),
-        "department": u.department,
         "batch_id": u.batch_id,
         "batch_label": batch_label,
     }
@@ -77,7 +76,6 @@ def _env_admin_me() -> dict:
         "name": "Administrator",
         "email": email,
         "role": "Admin",
-        "department": None,
         "batch_id": None,
         "batch_label": None,
     }
@@ -187,8 +185,6 @@ def patch_me():
     data = request.get_json(silent=True) or {}
     if "name" in data and data["name"]:
         u.full_name = str(data["name"]).strip()
-    if "department" in data:
-        u.department = str(data["department"]).strip() if data.get("department") else None
     db.session.commit()
     return jsonify(_user_me(u))
 

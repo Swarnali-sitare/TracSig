@@ -271,18 +271,6 @@ def admin_dashboard() -> dict:
         pending_pct = 100 - completed_pct
         completion_trends.append({"month": _month_key(mstart), "completed": completed_pct, "pending": pending_pct})
 
-    dept_map: dict[str, dict[str, int]] = defaultdict(lambda: {"students": 0, "faculty": 0})
-    for u in User.query.filter_by(role="Student").all():
-        d = u.department or "Unassigned"
-        dept_map[d]["students"] += 1
-    for u in User.query.filter_by(role="Staff").all():
-        d = u.department or "Unassigned"
-        dept_map[d]["faculty"] += 1
-
-    department_statistics = [
-        {"department": k, "students": v["students"], "faculty": v["faculty"]} for k, v in sorted(dept_map.items())
-    ]
-
     recent_activity = []
     for u in User.query.order_by(User.created_at.desc()).limit(3).all():
         recent_activity.append(
@@ -303,6 +291,5 @@ def admin_dashboard() -> dict:
         },
         "monthly_assignments": monthly_assignments,
         "completion_trends": completion_trends,
-        "department_statistics": department_statistics,
         "recent_activity": recent_activity,
     }
