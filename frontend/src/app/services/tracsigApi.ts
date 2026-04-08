@@ -152,10 +152,6 @@ export async function fetchStaffStudentProgress(course?: string) {
 
 // ——— Admin ———
 
-export async function fetchAdminDashboard() {
-  return apiRequest<Record<string, unknown>>("/api/admin/dashboard");
-}
-
 export async function fetchAdminStudents(params: { batch?: string; search?: string }) {
   const sp = new URLSearchParams();
   if (params.batch && params.batch !== "all") sp.set("batch", params.batch);

@@ -12,8 +12,6 @@ from app.errors import ApiError
 from app.extensions import db
 from app.models import Assignment, Batch, Course, Enrollment, Faculty, Student, Submission, User
 from app.services.assignment_helpers import assignments_for_student, record_status
-from app.services.dashboards import admin_dashboard
-
 admin_bp = Blueprint("admin", __name__)
 
 
@@ -27,12 +25,6 @@ def _student_progress_percent(u: User) -> int:
         if record_status(sub) == "completed":
             done += 1
     return round(100.0 * done / len(assigns))
-
-
-@admin_bp.get("/dashboard")
-@require_roles("Admin")
-def dashboard():
-    return jsonify(admin_dashboard())
 
 
 @admin_bp.get("/students")

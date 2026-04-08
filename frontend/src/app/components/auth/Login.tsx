@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "../../context/AuthContext";
+import { homePathForRole } from "../../types/apiRoles";
 import { Loader2 } from "lucide-react";
 import { PasswordInputWithToggle } from "../common/PasswordInputWithToggle";
 import { toast } from "sonner";
@@ -25,9 +26,7 @@ export const Login = () => {
     try {
       const u = await login(email, password);
       toast.success("Login successful!");
-      const path =
-        u.role === "faculty" ? "/faculty/dashboard" : u.role === "admin" ? "/admin/dashboard" : "/student/dashboard";
-      navigate(path);
+      navigate(homePathForRole(u.role));
     } catch (err) {
       if (err instanceof ApiRequestError) {
         toast.error(err.message);

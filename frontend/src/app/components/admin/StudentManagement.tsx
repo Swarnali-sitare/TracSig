@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Search, Filter, UserPlus, Edit, Trash2 } from "lucide-react";
 import { PasswordInputWithToggle } from "../common/PasswordInputWithToggle";
+import { HoverSelect } from "../ui/hover-select";
 import { toast } from "sonner";
 import { ApiRequestError } from "../../services/api";
 import {
@@ -25,6 +26,28 @@ export const StudentManagement = () => {
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [batches, setBatches] = useState<{ id: number; name: string; year_label: string }[]>([]);
   const [loading, setLoading] = useState(true);
+  const batchFilterOptions = useMemo(
+    () => [
+      { value: "all", label: "All Batches" },
+      ...batches.map((b) => ({
+        value: b.year_label,
+        label: `${b.name} (${b.year_label})`,
+      })),
+    ],
+    [batches],
+  );
+
+  const addStudentBatchOptions = useMemo(
+    () => [
+      { value: "", label: "Select batch" },
+      ...batches.map((b) => ({
+        value: String(b.id),
+        label: `${b.name} (${b.year_label})`,
+      })),
+    ],
+    [batches],
+  );
+
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -126,19 +149,14 @@ export const StudentManagement = () => {
             />
           </div>
           <div className="relative">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <select
+            <Filter className="absolute left-3 top-1/2 z-[1] -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
+            <HoverSelect
               value={batchFilter}
-              onChange={(e) => setBatchFilter(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
-            >
-              <option value="all">All Batches</option>
-              {batches.map((b) => (
-                <option key={b.id} value={b.year_label}>
-                  {b.name} ({b.year_label})
-                </option>
-              ))}
-            </select>
+              onChange={setBatchFilter}
+              options={batchFilterOptions}
+              placeholder="All Batches"
+              triggerClassName="pl-10"
+            />
           </div>
         </div>
       </div>
@@ -261,18 +279,12 @@ export const StudentManagement = () => {
               />
               <div>
                 <label className="block mb-2 text-foreground">Batch</label>
-                <select
+                <HoverSelect
                   value={form.batch_id}
-                  onChange={(e) => setForm((f) => ({ ...f, batch_id: e.target.value }))}
-                  className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
-                >
-                  <option value="">Select batch</option>
-                  {batches.map((batch) => (
-                    <option key={batch.id} value={batch.id}>
-                      {batch.name} ({batch.year_label})
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => setForm((f) => ({ ...f, batch_id: v }))}
+                  options={addStudentBatchOptions}
+                  placeholder="Select batch"
+                />
               </div>
             </div>
             <div className="p-6 border-t border-border flex justify-end gap-3">

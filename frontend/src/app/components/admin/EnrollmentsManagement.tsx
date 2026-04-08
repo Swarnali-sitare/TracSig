@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ApiRequestError } from "../../services/api";
@@ -10,6 +10,7 @@ import {
   fetchAdminEnrollments,
   type AdminEnrollmentRow,
 } from "../../services/tracsigApi";
+import { HoverSelect } from "../ui/hover-select";
 
 type CourseOption = { id: number; code: string; name: string };
 
@@ -23,6 +24,25 @@ export const EnrollmentsManagement = () => {
   const [batchId, setBatchId] = useState("");
   const [courseId, setCourseId] = useState("");
   const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  const batchSelectOptions = useMemo(
+    () => [
+      { value: "", label: "Select batch" },
+      ...batches.map((b) => ({ value: String(b.id), label: b.name })),
+    ],
+    [batches],
+  );
+
+  const courseSelectOptions = useMemo(
+    () => [
+      { value: "", label: "Select course" },
+      ...courses.map((c) => ({
+        value: String(c.id),
+        label: `${c.code} — ${c.name}`,
+      })),
+    ],
+    [courses],
+  );
 
   const loadLists = useCallback(async () => {
     setLoading(true);
@@ -131,35 +151,23 @@ export const EnrollmentsManagement = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
             <label className="block mb-2 text-foreground text-sm">Batch</label>
-            <select
+            <HoverSelect
               value={batchId}
-              onChange={(e) => setBatchId(e.target.value)}
+              onChange={setBatchId}
+              options={batchSelectOptions}
+              placeholder="Select batch"
               disabled={submitting}
-              className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors disabled:opacity-50"
-            >
-              <option value="">Select batch</option>
-              {batches.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
+            />
           </div>
           <div>
             <label className="block mb-2 text-foreground text-sm">Course</label>
-            <select
+            <HoverSelect
               value={courseId}
-              onChange={(e) => setCourseId(e.target.value)}
+              onChange={setCourseId}
+              options={courseSelectOptions}
+              placeholder="Select course"
               disabled={submitting}
-              className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors disabled:opacity-50"
-            >
-              <option value="">Select course</option>
-              {courses.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.code} — {c.name}
-                </option>
-              ))}
-            </select>
+            />
           </div>
         </div>
         <button

@@ -15,7 +15,6 @@ import { StudentProgress } from "./components/faculty/StudentProgress";
 import { EvaluateAssignments } from "./components/faculty/EvaluateAssignments";
 
 // Admin Pages
-import { AdminDashboard } from "./components/admin/AdminDashboard";
 import { StudentData } from "./components/admin/StudentData";
 import { BatchStudentRemovePage } from "./components/admin/BatchStudentRemovePage";
 import { FacultyManagement } from "./components/admin/FacultyManagement";
@@ -73,8 +72,8 @@ export const router = createBrowserRouter([
         path: "admin",
         Component: DashboardLayout,
         children: [
-          { index: true, Component: AdminDashboard },
-          { path: "dashboard", Component: AdminDashboard },
+          { index: true, element: <Navigate to="/admin/student-data" replace /> },
+          { path: "dashboard", element: <Navigate to="/admin/student-data" replace /> },
           { path: "student-data", Component: StudentData },
           { path: "student-data/batch/:batchId/remove", Component: BatchStudentRemovePage },
           { path: "students", element: <Navigate to="/admin/student-data" replace /> },

@@ -183,7 +183,6 @@ Base URL: `/api`. All JSON bodies/responses use `Content-Type: application/json`
 | POST | `/api/staff/submissions/:id/evaluate` | Bearer | Staff |
 | GET | `/api/staff/students/progress` | Bearer | Staff |
 | GET | `/api/staff/dashboard` | Bearer | Staff |
-| GET | `/api/admin/dashboard` | Bearer | Admin |
 | GET | `/api/admin/students` | Bearer | Admin |
 | POST | `/api/admin/students` | Bearer | Admin |
 | GET | `/api/admin/students/:id` | Bearer | Admin |
@@ -350,16 +349,9 @@ Backends should return structures that can feed the existing charts without UI c
 - **Course progress:** Per course staff teaches: `{ "course", "submissions", "total_students" }`.
 - **Recent assignments table:** Assignments with `students` (eligible count), `submitted` (count submitted), `due_date`.
 
-### 5.3 `GET /api/admin/dashboard`
+### 5.3 Admin dashboard
 
-**Purpose:** Match `AdminDashboard.tsx`.
-
-**Aggregates:**
-
-- **Cards:** total students, total staff, total assignments system-wide, active courses count.
-- **Monthly assignments:** Assignments created per month (6 months).
-- **Completion trends:** Per month `% completed` vs `% pending` (define numerator/denominator clearly from submissions).
-- **Recent activity:** Feed from an `audit_log` table (recommended) or derived events: faculty added, course updated, batch created, assignment created — `{ id, action, actor_name, created_at }` with `created_at` ISO for client-relative formatting.
+There is **no** admin dashboard aggregation API or admin dashboard page in the current app; admins land on **Student Data** (`/admin/student-data`).
 
 ---
 

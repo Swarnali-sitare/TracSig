@@ -6,10 +6,71 @@ import { CheckIcon, ChevronRightIcon, CircleIcon } from "lucide-react";
 
 import { cn } from "./utils";
 
+const HOVER_CLOSE_MS = 200;
+
+type DropdownMenuHoverCtx = {
+  scheduleClose: () => void;
+  cancelClose: () => void;
+  requestOpen: () => void;
+};
+
+const DropdownMenuHoverContext = React.createContext<DropdownMenuHoverCtx | null>(null);
+
 function DropdownMenu({
+  open: controlledOpen,
+  defaultOpen,
+  onOpenChange,
+  children,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
-  return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} />;
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(Boolean(defaultOpen));
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
+  const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const setOpen = React.useCallback(
+    (next: boolean) => {
+      if (!isControlled) setUncontrolledOpen(next);
+      onOpenChange?.(next);
+    },
+    [isControlled, onOpenChange],
+  );
+
+  const cancelClose = React.useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  const scheduleClose = React.useCallback(() => {
+    cancelClose();
+    timerRef.current = setTimeout(() => setOpen(false), HOVER_CLOSE_MS);
+  }, [cancelClose, setOpen]);
+
+  const requestOpen = React.useCallback(() => {
+    cancelClose();
+    setOpen(true);
+  }, [cancelClose, setOpen]);
+
+  const ctx = React.useMemo(
+    () => ({ scheduleClose, cancelClose, requestOpen }),
+    [scheduleClose, cancelClose, requestOpen],
+  );
+
+  return (
+    <DropdownMenuHoverContext.Provider value={ctx}>
+      <DropdownMenuPrimitive.Root
+        data-slot="dropdown-menu"
+        modal={false}
+        open={open}
+        onOpenChange={setOpen}
+        {...props}
+      >
+        {children}
+      </DropdownMenuPrimitive.Root>
+    </DropdownMenuHoverContext.Provider>
+  );
 }
 
 function DropdownMenuPortal({
@@ -21,12 +82,23 @@ function DropdownMenuPortal({
 }
 
 function DropdownMenuTrigger({
+  onPointerEnter,
+  onPointerLeave,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Trigger>) {
+  const hover = React.useContext(DropdownMenuHoverContext);
   return (
     <DropdownMenuPrimitive.Trigger
       data-slot="dropdown-menu-trigger"
       {...props}
+      onPointerEnter={(e) => {
+        hover?.requestOpen();
+        onPointerEnter?.(e);
+      }}
+      onPointerLeave={(e) => {
+        hover?.scheduleClose();
+        onPointerLeave?.(e);
+      }}
     />
   );
 }
@@ -34,8 +106,11 @@ function DropdownMenuTrigger({
 function DropdownMenuContent({
   className,
   sideOffset = 4,
+  onPointerEnter,
+  onPointerLeave,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Content>) {
+  const hover = React.useContext(DropdownMenuHoverContext);
   return (
     <DropdownMenuPrimitive.Portal>
       <DropdownMenuPrimitive.Content
@@ -45,6 +120,15 @@ function DropdownMenuContent({
           "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 max-h-(--radix-dropdown-menu-content-available-height) min-w-[8rem] origin-(--radix-dropdown-menu-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-md border p-1 shadow-md",
           className,
         )}
+        onPointerEnter={(e) => {
+          hover?.cancelClose();
+          hover?.requestOpen();
+          onPointerEnter?.(e);
+        }}
+        onPointerLeave={(e) => {
+          hover?.scheduleClose();
+          onPointerLeave?.(e);
+        }}
         {...props}
       />
     </DropdownMenuPrimitive.Portal>

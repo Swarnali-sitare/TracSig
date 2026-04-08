@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search, TrendingUp, TrendingDown } from "lucide-react";
 import { toast } from "sonner";
 import { ApiRequestError } from "../../services/api";
 import { fetchStaffCourses, fetchStaffStudentProgress } from "../../services/tracsigApi";
+import { HoverSelect } from "../ui/hover-select";
 
 type ProgressRow = {
   student_id: number;
@@ -28,6 +29,14 @@ export const StudentProgress = () => {
     students_need_attention: 0,
   });
   const [loading, setLoading] = useState(true);
+
+  const courseFilterOptions = useMemo(
+    () => [
+      { value: "all", label: "All Courses" },
+      ...courses.map((c) => ({ value: c.code, label: c.code })),
+    ],
+    [courses],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -107,18 +116,12 @@ export const StudentProgress = () => {
               className="w-full pl-10 pr-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
             />
           </div>
-          <select
+          <HoverSelect
             value={courseFilter}
-            onChange={(e) => setCourseFilter(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
-          >
-            <option value="all">All Courses</option>
-            {courses.map((course) => (
-              <option key={course.id} value={course.code}>
-                {course.code}
-              </option>
-            ))}
-          </select>
+            onChange={setCourseFilter}
+            options={courseFilterOptions}
+            placeholder="All Courses"
+          />
         </div>
       </div>
 

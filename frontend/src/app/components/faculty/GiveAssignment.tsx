@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { Send, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { ApiRequestError } from "../../services/api";
 import { createStaffAssignment, fetchStaffCourses } from "../../services/tracsigApi";
+import { HoverSelect } from "../ui/hover-select";
 
 export const GiveAssignment = () => {
   const navigate = useNavigate();
@@ -38,7 +39,18 @@ export const GiveAssignment = () => {
     };
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const courseOptions = useMemo(
+    () => [
+      { value: "", label: "Select a course" },
+      ...courses.map((c) => ({
+        value: String(c.id),
+        label: `${c.code} — ${c.name}`,
+      })),
+    ],
+    [courses],
+  );
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
@@ -112,20 +124,13 @@ export const GiveAssignment = () => {
                 <label htmlFor="course" className="block mb-2 text-foreground">
                   Course <span className="text-error">*</span>
                 </label>
-                <select
+                <HoverSelect
                   id="course"
-                  name="course"
                   value={formData.course}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
-                >
-                  <option value="">Select a course</option>
-                  {courses.map((course) => (
-                    <option key={course.id} value={course.id}>
-                      {course.code} — {course.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => setFormData((f) => ({ ...f, course: v }))}
+                  options={courseOptions}
+                  placeholder="Select a course"
+                />
               </div>
 
               <div>

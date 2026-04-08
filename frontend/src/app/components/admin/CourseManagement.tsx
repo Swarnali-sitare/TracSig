@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Search, Plus, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ApiRequestError } from "../../services/api";
@@ -9,6 +9,7 @@ import {
   fetchAdminStaff,
   updateAdminCourse,
 } from "../../services/tracsigApi";
+import { HoverSelect } from "../ui/hover-select";
 
 type CourseRow = {
   id: number;
@@ -27,6 +28,17 @@ export const CourseManagement = () => {
   const [showAddCourse, setShowAddCourse] = useState(false);
   const [courses, setCourses] = useState<CourseRow[]>([]);
   const [staffList, setStaffList] = useState<StaffOption[]>([]);
+
+  const instructorOptions = useMemo(
+    () => [
+      { value: "", label: "Select instructor" },
+      ...staffList.map((s) => ({
+        value: String(s.id),
+        label: `${s.name} (${s.email})`,
+      })),
+    ],
+    [staffList],
+  );
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({
     code: "",
@@ -300,19 +312,13 @@ export const CourseManagement = () => {
               </div>
               <div>
                 <label className="block mb-2 text-foreground">Instructor</label>
-                <select
+                <HoverSelect
                   value={editForm.staff_id}
-                  onChange={(e) => setEditForm((f) => ({ ...f, staff_id: e.target.value }))}
+                  onChange={(v) => setEditForm((f) => ({ ...f, staff_id: v }))}
+                  options={instructorOptions}
+                  placeholder="Select instructor"
                   disabled={editSubmitting}
-                  className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors disabled:opacity-50"
-                >
-                  <option value="">Select instructor</option>
-                  {staffList.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} ({s.email})
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
             </div>
             <div className="p-6 border-t border-border flex justify-end gap-3">
@@ -377,18 +383,12 @@ export const CourseManagement = () => {
               </div>
               <div>
                 <label className="block mb-2 text-foreground">Instructor</label>
-                <select
+                <HoverSelect
                   value={form.staff_id}
-                  onChange={(e) => setForm((f) => ({ ...f, staff_id: e.target.value }))}
-                  className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
-                >
-                  <option value="">Select instructor</option>
-                  {staffList.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} ({s.email})
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => setForm((f) => ({ ...f, staff_id: v }))}
+                  options={instructorOptions}
+                  placeholder="Select instructor"
+                />
               </div>
             </div>
             <div className="p-6 border-t border-border flex justify-end gap-3">

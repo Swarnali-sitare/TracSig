@@ -3,7 +3,9 @@ import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationsContext";
 import { ThemeToggle } from "./ThemeToggle";
 import { useNavigate } from "react-router";
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
+
+const HOVER_CLOSE_MS = 200;
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -23,6 +25,42 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
   const navigate = useNavigate();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const notifTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const profileTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const cancelNotifClose = useCallback(() => {
+    if (notifTimerRef.current) {
+      clearTimeout(notifTimerRef.current);
+      notifTimerRef.current = null;
+    }
+  }, []);
+
+  const scheduleNotifClose = useCallback(() => {
+    cancelNotifClose();
+    notifTimerRef.current = setTimeout(() => setShowNotifications(false), HOVER_CLOSE_MS);
+  }, [cancelNotifClose]);
+
+  const openNotifications = useCallback(() => {
+    cancelNotifClose();
+    setShowNotifications(true);
+  }, [cancelNotifClose]);
+
+  const cancelProfileClose = useCallback(() => {
+    if (profileTimerRef.current) {
+      clearTimeout(profileTimerRef.current);
+      profileTimerRef.current = null;
+    }
+  }, []);
+
+  const scheduleProfileClose = useCallback(() => {
+    cancelProfileClose();
+    profileTimerRef.current = setTimeout(() => setShowProfileMenu(false), HOVER_CLOSE_MS);
+  }, [cancelProfileClose]);
+
+  const openProfileMenu = useCallback(() => {
+    cancelProfileClose();
+    setShowProfileMenu(true);
+  }, [cancelProfileClose]);
 
   const handleLogout = () => {
     logout();
@@ -51,11 +89,16 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
           <ThemeToggle />
 
           {/* Notifications */}
-          <div className="relative">
+          <div
+            className="relative"
+            onPointerEnter={openNotifications}
+            onPointerLeave={scheduleNotifClose}
+          >
             <button
-              onClick={() => setShowNotifications(!showNotifications)}
+              type="button"
               className="relative rounded-lg p-2 transition-colors hover:bg-hover-bg"
               aria-label="Notifications"
+              aria-expanded={showNotifications}
             >
               <Bell className="h-5 w-5 text-foreground" />
               {unreadCount > 0 && (
@@ -64,7 +107,11 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 overflow-hidden rounded-lg border border-border bg-card shadow-lg transition-colors">
+              <div
+                className="absolute right-0 mt-2 w-80 overflow-hidden rounded-lg border border-border bg-card shadow-lg transition-colors"
+                onPointerEnter={cancelNotifClose}
+                onPointerLeave={scheduleNotifClose}
+              >
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border p-4">
                   <h3 className="font-semibold text-foreground">Notifications</h3>
                   <div className="flex flex-wrap items-center justify-end gap-2">
@@ -147,11 +194,16 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
           </div>
 
           {/* Profile Menu */}
-          <div className="relative">
+          <div
+            className="relative"
+            onPointerEnter={openProfileMenu}
+            onPointerLeave={scheduleProfileClose}
+          >
             <button
-              onClick={() => setShowProfileMenu(!showProfileMenu)}
+              type="button"
               className="flex items-center gap-2 rounded-lg p-2 transition-colors hover:bg-hover-bg"
               aria-label="Profile menu"
+              aria-expanded={showProfileMenu}
             >
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary">
                 <User className="h-4 w-4 text-primary-foreground" />
@@ -160,7 +212,11 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
             </button>
 
             {showProfileMenu && (
-              <div className="absolute right-0 mt-2 w-48 overflow-hidden rounded-lg border border-border bg-card shadow-lg transition-colors">
+              <div
+                className="absolute right-0 mt-2 w-48 overflow-hidden rounded-lg border border-border bg-card shadow-lg transition-colors"
+                onPointerEnter={cancelProfileClose}
+                onPointerLeave={scheduleProfileClose}
+              >
                 <div className="border-b border-border p-4">
                   <p className="font-semibold text-foreground">{user?.name}</p>
                   <p className="text-sm text-muted-foreground">{user?.email}</p>

@@ -56,7 +56,6 @@ export const Sidebar = ({ isOpen }: SidebarProps) => {
   ];
 
   const adminMenu = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/admin/dashboard" },
     { icon: TableProperties, label: "Student Data", path: "/admin/student-data" },
     { icon: UserCheck, label: "Faculty", path: "/admin/faculty" },
     { icon: BookOpen, label: "Courses", path: "/admin/courses" },

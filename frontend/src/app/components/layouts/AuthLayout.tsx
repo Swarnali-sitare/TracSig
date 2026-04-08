@@ -1,12 +1,13 @@
 import { Outlet, Navigate } from "react-router";
 import { useAuth } from "../../context/AuthContext";
+import { homePathForRole } from "../../types/apiRoles";
 import { ThemeToggle } from "../common/ThemeToggle";
 
 export const AuthLayout = () => {
   const { user } = useAuth();
 
   if (user) {
-    return <Navigate to={`/${user.role}/dashboard`} replace />;
+    return <Navigate to={homePathForRole(user.role)} replace />;
   }
 
   return (

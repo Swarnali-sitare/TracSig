@@ -30,3 +30,9 @@ export function fromBackendRole(role: string): AppUserRole {
       return "student";
   }
 }
+
+/** Post-login / default app home (admin has no dashboard — use Student Data). */
+export function homePathForRole(role: AppUserRole): string {
+  if (role === "admin") return "/admin/student-data";
+  return `/${role}/dashboard`;
+}
