@@ -369,3 +369,14 @@
 .recharts-default-tooltip .recharts-tooltip-label {
   color: var(--foreground) !important;
 }
+
+/* Faculty pie chart custom tooltip — dark theme: force readable light text (Recharts defaults can win otherwise). */
+.dark .submission-status-pie-tooltip {
+  color: var(--foreground);
+}
+.dark .submission-status-pie-tooltip .text-card-foreground {
+  color: var(--card-foreground) !important;
+}
+.dark .submission-status-pie-tooltip .text-muted-foreground {
+  color: var(--muted-foreground) !important;
+}

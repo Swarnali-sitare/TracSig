@@ -1,5 +1,37 @@
-import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Sector, Tooltip } from "recharts";
 import React from "react";
+
+const PIE_HOVER_RADIUS_BUMP = 12;
+
+type SectorLike = {
+  cx?: number;
+  cy?: number;
+  innerRadius?: number | string;
+  outerRadius?: number | string;
+  startAngle?: number;
+  endAngle?: number;
+  fill?: string;
+};
+
+function PieActiveShape(props: SectorLike) {
+  const cx = props.cx ?? 0;
+  const cy = props.cy ?? 0;
+  const inner = Number(props.innerRadius) || 0;
+  const outer = Number(props.outerRadius) || 0;
+  return (
+    <Sector
+      cx={cx}
+      cy={cy}
+      innerRadius={inner}
+      outerRadius={outer + PIE_HOVER_RADIUS_BUMP}
+      startAngle={props.startAngle}
+      endAngle={props.endAngle}
+      fill={props.fill}
+      stroke="var(--border-color)"
+      strokeWidth={1}
+    />
+  );
+}
 
 export type SubmissionStatusSlice = { name: string; value: number; color: string };
 
@@ -55,7 +87,7 @@ export function SubmissionStatusPieChart({ data }: Props) {
           paddingAngle={0}
           label={false}
           isAnimationActive={false}
-          activeShape={false}
+          activeShape={PieActiveShape}
           stroke="var(--border-color)"
           strokeWidth={1}
         >
@@ -64,16 +96,21 @@ export function SubmissionStatusPieChart({ data }: Props) {
           ))}
         </Pie>
         <Tooltip
-          contentStyle={{
-            backgroundColor: "var(--card)",
-            border: "1px solid var(--border-color)",
-            borderRadius: "8px",
-            color: "var(--foreground)",
-          }}
-          formatter={(value: number, name: string) => {
-            const v = typeof value === "number" ? value : 0;
+          content={({ active, payload }) => {
+            if (!active || !payload?.length) return null;
+            const item = payload[0];
+            const name = String(item.name ?? "");
+            const raw = item.value;
+            const v = typeof raw === "number" ? raw : Number(raw) || 0;
             const pct = total > 0 ? Math.round((v / total) * 100) : 0;
-            return [`${v} (${pct}%)`, name];
+            return (
+              <div className="submission-status-pie-tooltip rounded-lg border border-border bg-card px-3 py-2 text-sm shadow-md">
+                <p className="font-medium text-card-foreground">{name}</p>
+                <p className="text-muted-foreground">
+                  {v} ({pct}%)
+                </p>
+              </div>
+            );
           }}
         />
         <Legend content={renderLegend} layout="vertical" align="right" verticalAlign="middle" />
