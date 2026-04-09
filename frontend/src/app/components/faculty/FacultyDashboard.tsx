@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
-import { FileText, Users, CheckCircle, TrendingUp } from "lucide-react";
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
-import { RechartsBarHoverCursor } from "../charts";
+import React, { useEffect, useState } from "react";
+import { FileText, Users, CheckCircle, ClipboardPenLine } from "lucide-react";
+import { SubmissionStatusPieChart } from "../charts/SubmissionStatusPieChart";
 import { toast } from "sonner";
 import { ApiRequestError } from "../../services/api";
 import { fetchStaffDashboard } from "../../services/tracsigApi";
@@ -10,9 +9,9 @@ type StaffDash = {
   assignments_created: number;
   total_students: number;
   submissions_count: number;
-  completion_rate_percent: number;
+  pending_evaluation_count: number;
+  avg_assignment_submission_rate_percent: number | null;
   completion_data: { name: string; value: number; color: string }[];
-  course_progress: { course: string; submissions: number; total_students: number }[];
   recent_assignments: {
     id: number;
     title: string;
@@ -78,11 +77,11 @@ export const FacultyDashboard = () => {
       bgColor: "color-mix(in srgb, var(--success) 16%, transparent)",
     },
     {
-      icon: TrendingUp,
-      label: "Completion Rate",
-      value: `${data.completion_rate_percent}%`,
-      color: "var(--info)",
-      bgColor: "color-mix(in srgb, var(--info) 16%, transparent)",
+      icon: ClipboardPenLine,
+      label: "Pending Evaluation",
+      value: String(data.pending_evaluation_count ?? 0),
+      color: "var(--warning)",
+      bgColor: "color-mix(in srgb, var(--warning) 16%, transparent)",
     },
   ];
 
@@ -93,12 +92,6 @@ export const FacultyDashboard = () => {
         { name: "Pending", value: 0, color: "var(--warning)" },
         { name: "Incomplete", value: 0, color: "var(--error)" },
       ];
-
-  const courseProgressData = data.course_progress.map((c) => ({
-    course: c.course,
-    submissions: c.submissions,
-    total: c.total_students,
-  }));
 
   const recentAssignments = data.recent_assignments;
 
@@ -130,55 +123,38 @@ export const FacultyDashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
-          <h3 className="mb-4 text-foreground">Submission Status</h3>
+          <h2 className="mb-4 text-foreground">Submission Status</h2>
           {completionData.every((d) => d.value === 0) ? (
             <p className="text-sm text-muted-foreground py-8 text-center">No submission data yet.</p>
           ) : (
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie
-                  data={completionData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, value }) => `${name}: ${value}`}
-                  outerRadius={80}
-                  fill="var(--muted-foreground)"
-                  dataKey="value"
-                >
-                  {completionData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            <SubmissionStatusPieChart data={completionData} />
           )}
         </div>
 
         <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
-          <h3 className="mb-4 text-foreground">Course Progress</h3>
-          {courseProgressData.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">No courses assigned.</p>
-          ) : (
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={courseProgressData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
-                <XAxis dataKey="course" stroke="var(--text-secondary)" />
-                <YAxis stroke="var(--text-secondary)" />
-                <Tooltip cursor={<RechartsBarHoverCursor />} />
-                <Legend />
-                <Bar dataKey="submissions" fill="var(--accent-primary)" name="Submissions" radius={[8, 8, 0, 0]} />
-                <Bar dataKey="total" fill="var(--border-color)" name="Total Students" radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
+          <h2 className="mb-4 text-foreground">Submission Rate</h2>
+          <div className="flex min-h-[220px] flex-col items-center justify-center py-6">
+            {data.avg_assignment_submission_rate_percent != null ? (
+              <>
+                <p className="text-3xl tabular-nums text-foreground" style={{ fontWeight: 500 }}>
+                  {data.avg_assignment_submission_rate_percent}% Assignments Submitted
+                </p>
+                <p className="mt-3 text-center text-xl text-muted-foreground">
+                  (Out of {data.assignments_created} assignment(s) given)
+                </p>
+              </>
+            ) : (
+              <p className="text-center text-sm text-muted-foreground">
+                No assignments with enrolled students yet.
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
       <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
         <div className="p-6 border-b border-border">
-          <h3 className="text-foreground">Recent Assignments</h3>
+          <h2 className="text-foreground">Recent Assignments</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">

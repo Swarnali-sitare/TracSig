@@ -156,6 +156,16 @@ def staff_dashboard(user: User) -> dict:
         or 0
     )
 
+    pending_evaluation_count = (
+        db.session.scalar(
+            select(func.count())
+            .select_from(Submission)
+            .join(Assignment)
+            .where(Assignment.staff_id == user.id, Submission.status == "submitted")
+        )
+        or 0
+    )
+
     eligible_pairs = 0
     completed_pairs = 0
     for a in my_assignments:
@@ -186,14 +196,6 @@ def staff_dashboard(user: User) -> dict:
         {"name": "Incomplete", "value": pie_incomplete, "color": "var(--error)"},
     ]
 
-    course_progress = []
-    for c in Course.query.filter_by(staff_id=user.id).all():
-        total_s = eligible_students_for_course(c.id)
-        subm = 0
-        for asn in Assignment.query.filter_by(course_id=c.id).all():
-            subm += submitted_count_for_assignment(asn.id)
-        course_progress.append({"course": c.code, "submissions": subm, "total_students": total_s})
-
     recent_rows = []
     for a in sorted(my_assignments, key=lambda x: x.created_at, reverse=True)[:5]:
         students_n = eligible_students_for_course(a.course_id)
@@ -209,12 +211,28 @@ def staff_dashboard(user: User) -> dict:
             }
         )
 
+    # Average of each assignment's submission rate (%), e.g. (100% + 90%) / 2 = 95%.
+    per_assignment_rates: list[float] = []
+    for a in my_assignments:
+        ec = eligible_students_for_course(a.course_id)
+        if ec <= 0:
+            continue
+        sub_n = submitted_count_for_assignment(a.id)
+        pct = min(100.0, 100.0 * float(sub_n) / float(ec))
+        per_assignment_rates.append(pct)
+    avg_assignment_submission_rate_percent = (
+        round(sum(per_assignment_rates) / len(per_assignment_rates), 1)
+        if per_assignment_rates
+        else None
+    )
+
     return {
         "assignments_created": assignments_created,
         "total_students": int(total_students),
         "submissions_count": int(submissions_count),
+        "pending_evaluation_count": int(pending_evaluation_count),
         "completion_rate_percent": completion_rate,
+        "avg_assignment_submission_rate_percent": avg_assignment_submission_rate_percent,
         "completion_data": completion_data,
-        "course_progress": course_progress,
         "recent_assignments": recent_rows,
     }

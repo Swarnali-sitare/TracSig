@@ -531,3 +531,5 @@ def delete_enrollment(eid: int):
     db.session.delete(row)
     db.session.commit()
     return "", 204
+
+
