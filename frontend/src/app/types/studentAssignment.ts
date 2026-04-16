@@ -9,4 +9,6 @@ export type StudentAssignmentRecord = {
   status: SubmissionRecordStatus;
   submittedOn?: string;
   description?: string;
+  /** Server: draft was auto-submitted when the due date passed. */
+  autoSubmitted?: boolean;
 };

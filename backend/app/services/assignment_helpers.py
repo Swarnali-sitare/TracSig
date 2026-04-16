@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, timezone
 
 from app.models import Assignment, Submission
 
@@ -35,6 +35,29 @@ def assignments_for_student(batch_id: int | None) -> list[Assignment]:
     if not cids:
         return []
     return Assignment.query.filter(Assignment.course_id.in_(cids)).order_by(Assignment.due_date.asc()).all()
+
+
+def ensure_past_due_auto_submit(a: Assignment, student_id: int) -> Submission | None:
+    """
+    After due date: draft submissions become submitted as-is with auto_submitted=True.
+    No row => still None (Incomplete). Already submitted/evaluated => unchanged.
+    """
+    from app.extensions import db
+
+    if a.due_date >= date.today():
+        return Submission.query.filter_by(assignment_id=a.id, student_id=student_id).first()
+
+    sub = Submission.query.filter_by(assignment_id=a.id, student_id=student_id).first()
+    if sub is None:
+        return None
+    if sub.status in ("submitted", "evaluated"):
+        return sub
+    if sub.status == "draft":
+        sub.status = "submitted"
+        sub.submitted_at = datetime.now(timezone.utc)
+        sub.auto_submitted = True
+        db.session.flush()
+    return sub
 
 
 def get_or_create_submission(assignment_id: int, student_id: int) -> Submission:
@@ -99,4 +122,5 @@ def serialize_student_assignment_row(a: Assignment, sub: Submission | None) -> d
         "description": a.description,
         "display_status": ds,
         "submission_status": sub.status if sub else None,
+        "auto_submitted": bool(sub and getattr(sub, "auto_submitted", False)),
     }

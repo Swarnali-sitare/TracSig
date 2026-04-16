@@ -11,6 +11,7 @@ from app.models import Assignment, Submission
 from app.services.assignment_helpers import (
     assignments_for_student,
     display_status,
+    ensure_past_due_auto_submit,
     get_or_create_submission,
     serialize_student_assignment_row,
 )
@@ -26,6 +27,9 @@ def list_assignments():
     scope = (request.args.get("scope") or "active").lower()
     today = date.today()
     items = assignments_for_student(g.current_user.batch_id)
+    for a in items:
+        ensure_past_due_auto_submit(a, g.current_user.id)
+    db.session.commit()
     out = []
     for a in items:
         if scope == "active" and a.due_date < today:
@@ -44,6 +48,8 @@ def get_assignment(aid: int):
     a = items.get(aid)
     if not a:
         raise ApiError("NOT_FOUND", "Assignment not found", 404)
+    ensure_past_due_auto_submit(a, g.current_user.id)
+    db.session.commit()
     sub = Submission.query.filter_by(assignment_id=aid, student_id=g.current_user.id).first()
     row = serialize_student_assignment_row(a, sub)
     content = ""
@@ -62,9 +68,14 @@ def get_assignment(aid: int):
 @student_bp.post("/assignments/<int:aid>/draft")
 @require_roles("Student")
 def save_draft(aid: int):
-    items = {a.id for a in assignments_for_student(g.current_user.batch_id)}
+    items = {a.id: a for a in assignments_for_student(g.current_user.batch_id)}
     if aid not in items:
         raise ApiError("NOT_FOUND", "Assignment not found", 404)
+    a = items[aid]
+    ensure_past_due_auto_submit(a, g.current_user.id)
+    db.session.commit()
+    if a.due_date < date.today():
+        raise ApiError("FORBIDDEN", "The due date has passed; this assignment is closed.", 403)
     data = request.get_json(silent=True) or {}
     content = data.get("content")
     if content is not None and len(str(content)) > 2 * 1024 * 1024:
@@ -81,9 +92,14 @@ def save_draft(aid: int):
 @student_bp.post("/assignments/<int:aid>/submit")
 @require_roles("Student")
 def submit_assignment(aid: int):
-    items = {a.id for a in assignments_for_student(g.current_user.batch_id)}
+    items = {a.id: a for a in assignments_for_student(g.current_user.batch_id)}
     if aid not in items:
         raise ApiError("NOT_FOUND", "Assignment not found", 404)
+    a = items[aid]
+    ensure_past_due_auto_submit(a, g.current_user.id)
+    db.session.commit()
+    if a.due_date < date.today():
+        raise ApiError("FORBIDDEN", "The due date has passed; you cannot submit or edit this assignment.", 403)
     data = request.get_json(silent=True) or {}
     content = (data.get("content") or "").strip()
     if not content:
@@ -96,6 +112,7 @@ def submit_assignment(aid: int):
     sub.content = content
     sub.status = "submitted"
     sub.submitted_at = datetime.now(timezone.utc)
+    sub.auto_submitted = False
     a = db.session.get(Assignment, aid)
     if a:
         create_notification(

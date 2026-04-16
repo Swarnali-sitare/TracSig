@@ -107,6 +107,17 @@ def sync_database_schema() -> list[str]:
                 conn.execute(text("ALTER TABLE courses ADD COLUMN description TEXT"))
                 lines.append("Added courses.description")
 
+        if insp.has_table("submissions"):
+            scols = colset("submissions")
+            if "auto_submitted" not in scols:
+                if dialect == "postgresql":
+                    conn.execute(
+                        text("ALTER TABLE submissions ADD COLUMN auto_submitted BOOLEAN NOT NULL DEFAULT false")
+                    )
+                else:
+                    conn.execute(text("ALTER TABLE submissions ADD COLUMN auto_submitted BOOLEAN NOT NULL DEFAULT 0"))
+                lines.append("Added submissions.auto_submitted")
+
         if insp.has_table("refresh_tokens"):
             rtcols = colset("refresh_tokens")
             if "principal_kind" not in rtcols:

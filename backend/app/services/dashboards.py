@@ -12,6 +12,7 @@ from app.services.assignment_helpers import (
     assignments_for_student,
     display_status,
     eligible_students_for_course,
+    ensure_past_due_auto_submit,
     submitted_count_for_assignment,
 )
 
@@ -23,6 +24,10 @@ def _month_key(d: date) -> str:
 def student_dashboard(user: User) -> dict:
     today = date.today()
     items = assignments_for_student(user.batch_id)
+    for a in items:
+        ensure_past_due_auto_submit(a, user.id)
+    db.session.commit()
+
     subs_by_aid = {}
     if items:
         aids = [a.id for a in items]
@@ -173,6 +178,15 @@ def staff_dashboard(user: User) -> dict:
         eligible_pairs += ec
         completed_pairs += submitted_count_for_assignment(a.id)
     completion_rate = round(100.0 * completed_pairs / eligible_pairs, 1) if eligible_pairs else 0.0
+
+    for a in my_assignments:
+        batch_ids = [r.batch_id for r in Enrollment.query.filter_by(course_id=a.course_id).all()]
+        if not batch_ids:
+            continue
+        studs = User.query.filter(User.role == "Student", User.batch_id.in_(batch_ids)).all()
+        for stu in studs:
+            ensure_past_due_auto_submit(a, stu.id)
+    db.session.commit()
 
     pie_completed = pie_pending = pie_incomplete = 0
     for a in my_assignments:

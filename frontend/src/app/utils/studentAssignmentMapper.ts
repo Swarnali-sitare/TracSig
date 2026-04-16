@@ -10,6 +10,7 @@ export function apiListRowToStudentAssignment(row: {
   record_status: string;
   submitted_on?: string | null;
   description?: string | null;
+  auto_submitted?: boolean | null;
 }): StudentAssignmentRecord {
   const status: SubmissionRecordStatus = row.record_status === "completed" ? "completed" : "pending";
   return {
@@ -20,5 +21,6 @@ export function apiListRowToStudentAssignment(row: {
     status,
     submittedOn: row.submitted_on ?? undefined,
     description: row.description ?? undefined,
+    autoSubmitted: Boolean(row.auto_submitted),
   };
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router";
 import { Save, Send, ArrowLeft, Clock, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ import {
   daysFromToday,
   getDisplayStatusBadgeClass,
   getStudentAssignmentDisplayStatus,
+  isDueDatePassed,
 } from "../../utils/assignmentStatus";
 import { useAuth } from "../../context/AuthContext";
 import { ApiRequestError } from "../../services/api";
@@ -45,6 +46,7 @@ export const AssignmentWork = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [marks, setMarks] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [autoSubmitted, setAutoSubmitted] = useState(false);
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const serverDraftSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -70,8 +72,10 @@ export const AssignmentWork = () => {
           status: detail.record_status === "completed" ? "completed" : "pending",
           submittedOn: detail.submitted_on ? String(detail.submitted_on).slice(0, 10) : undefined,
           description: detail.description != null ? String(detail.description) : undefined,
+          autoSubmitted: Boolean(detail.auto_submitted),
         };
         setAssignment(row);
+        setAutoSubmitted(Boolean(detail.auto_submitted));
         const serverContent = typeof detail.content === "string" ? detail.content : "";
         if (!submitted && user?.id) {
           const local = loadAssignmentDraft(user.id, id);
@@ -104,9 +108,11 @@ export const AssignmentWork = () => {
     ? getStudentAssignmentDisplayStatus(assignment)
     : "Pending";
   const deltaDays = assignment ? daysFromToday(assignment.dueDate) : 0;
+  const duePassed = assignment ? isDueDatePassed(assignment.dueDate) : false;
+  const canEdit = !isSubmitted && !duePassed;
 
   useEffect(() => {
-    if (!draftHydrated || !user?.id || !id || isSubmitted) return;
+    if (!draftHydrated || !user?.id || !id || isSubmitted || !canEdit) return;
     if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
     autosaveTimerRef.current = setTimeout(() => {
       try {
@@ -123,11 +129,11 @@ export const AssignmentWork = () => {
     return () => {
       if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
     };
-  }, [submissionText, draftHydrated, user?.id, id, isSubmitted]);
+  }, [submissionText, draftHydrated, user?.id, id, isSubmitted, canEdit]);
 
   // Debounced server draft sync (API integration)
   useEffect(() => {
-    if (!draftHydrated || !id || isSubmitted) return;
+    if (!draftHydrated || !id || isSubmitted || !canEdit) return;
     if (serverDraftSaveRef.current) clearTimeout(serverDraftSaveRef.current);
     serverDraftSaveRef.current = setTimeout(() => {
       void saveStudentDraft(Number(id), submissionText).catch(() => {
@@ -137,11 +143,15 @@ export const AssignmentWork = () => {
     return () => {
       if (serverDraftSaveRef.current) clearTimeout(serverDraftSaveRef.current);
     };
-  }, [submissionText, draftHydrated, id, isSubmitted]);
+  }, [submissionText, draftHydrated, id, isSubmitted, canEdit]);
 
   const handleSaveAsDraft = useCallback(async () => {
     if (!user?.id || !id) {
       toast.error("You must be signed in to save a draft.");
+      return;
+    }
+    if (!canEdit) {
+      toast.error("This assignment is closed.");
       return;
     }
 
@@ -161,9 +171,13 @@ export const AssignmentWork = () => {
       else toast.error("Could not save draft.");
     }
     setIsSaving(false);
-  }, [user?.id, id, submissionText]);
+  }, [user?.id, id, submissionText, canEdit]);
 
   const handleSubmit = async () => {
+    if (!canEdit) {
+      toast.error("This assignment is closed.");
+      return;
+    }
     if (!submissionText.trim()) {
       toast.error("Please enter your submission");
       return;
@@ -213,11 +227,21 @@ export const AssignmentWork = () => {
       <div className="bg-card rounded-lg shadow-sm border border-border p-6 mb-6">
         <div className="flex flex-wrap items-start justify-between gap-3 mb-2">
           <h1 className="text-foreground">{assignment.title}</h1>
-          <span
-            className={`px-3 py-1 rounded-full text-sm border shrink-0 ${getDisplayStatusBadgeClass(displayStatus)}`}
-          >
-            {displayStatus}
-          </span>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <span
+              className={`px-3 py-1 rounded-full text-sm border ${getDisplayStatusBadgeClass(displayStatus)}`}
+            >
+              {displayStatus}
+            </span>
+            {isSubmitted && autoSubmitted && (
+              <span
+                className="text-xs px-2 py-0.5 rounded-md border border-muted-foreground/50 text-muted-foreground uppercase tracking-wide"
+                title="Submitted automatically when the due date passed"
+              >
+                auto
+              </span>
+            )}
+          </div>
         </div>
         <p className="text-muted-foreground mb-4">{assignment.course}</p>
 
@@ -264,7 +288,7 @@ export const AssignmentWork = () => {
       <div className="bg-card rounded-lg shadow-sm border border-border p-6 mb-6">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
           <h2 className="text-foreground">Your Submission</h2>
-          {!isSubmitted && (
+          {!isSubmitted && canEdit && (
             <div className="flex flex-col items-end gap-1 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <div className="h-2 w-2 animate-pulse rounded-full bg-success" />
@@ -277,6 +301,11 @@ export const AssignmentWork = () => {
 
         {isSubmitted ? (
           <div className="space-y-4">
+            {autoSubmitted && (
+              <p className="text-xs text-muted-foreground border border-border/60 rounded-lg px-3 py-2 bg-muted/30">
+                This submission was saved automatically when the due date passed (draft content as submitted).
+              </p>
+            )}
             <p className="text-muted-foreground py-4 border border-border rounded-lg px-4 bg-muted/50 whitespace-pre-wrap">
               {submissionText || "—"}
             </p>
@@ -295,13 +324,8 @@ export const AssignmentWork = () => {
               </div>
             )}
           </div>
-        ) : (
+        ) : canEdit ? (
           <>
-            {displayStatus === "Incomplete" && (
-              <p className="mb-4 text-sm text-error border border-error/30 bg-error/5 rounded-lg px-4 py-3">
-                The due date for this assignment has passed. You can still submit below if late submissions are allowed.
-              </p>
-            )}
             <p className="mb-3 text-xs text-muted-foreground">
               Drafts stay in <strong>Pending</strong> until you submit. Local and server drafts are kept in sync when
               online.
@@ -336,10 +360,18 @@ export const AssignmentWork = () => {
               </div>
             </div>
           </>
+        ) : (
+          <p className="text-sm text-muted-foreground border border-border rounded-lg px-4 py-6 bg-muted/30">
+            The due date has passed
+            {displayStatus === "Incomplete"
+              ? " and you had no submitted work. This assignment is marked Incomplete."
+              : "."}
+            {" "}You cannot edit or submit anymore.
+          </p>
         )}
       </div>
 
-      {showConfirmation && !isSubmitted && (
+      {showConfirmation && !isSubmitted && canEdit && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-card rounded-lg p-6 max-w-md w-full mx-4">
             <h3 className="mb-2 text-foreground">Confirm Submission</h3>

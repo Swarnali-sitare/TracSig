@@ -10,6 +10,7 @@ import {
   daysFromToday,
   getDisplayStatusBadgeClass,
   getStudentAssignmentDisplayStatus,
+  isDueDatePassed,
 } from "../../utils/assignmentStatus";
 import { apiListRowToStudentAssignment } from "../../utils/studentAssignmentMapper";
 import type { StudentAssignmentRecord } from "../../types/studentAssignment";
@@ -127,6 +128,7 @@ export const StudentAssignments = () => {
                 filteredAssignments.map((assignment) => {
                   const displayStatus = getStudentAssignmentDisplayStatus(assignment);
                   const deltaDays = daysFromToday(assignment.dueDate);
+                  const duePassed = isDueDatePassed(assignment.dueDate);
                   const isCompleted = assignment.status === "completed";
                   const hasDraft =
                     Boolean(user) &&
@@ -162,6 +164,14 @@ export const StudentAssignments = () => {
                           >
                             {displayStatus}
                           </span>
+                          {isCompleted && assignment.autoSubmitted && (
+                            <span
+                              className="text-xs px-2 py-0.5 rounded-md border border-muted-foreground/50 text-muted-foreground uppercase tracking-wide"
+                              title="Submitted automatically when the due date passed"
+                            >
+                              auto
+                            </span>
+                          )}
                           {hasDraft && displayStatus === "Pending" && (
                             <span
                               className="text-xs px-2 py-0.5 rounded-md border border-primary/40 bg-primary/10 text-foreground"
@@ -182,7 +192,7 @@ export const StudentAssignments = () => {
                           }
                           className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-accent-hover transition-colors"
                         >
-                          {isCompleted ? "View" : "Work"}
+                          {isCompleted || duePassed ? "View" : "Work"}
                         </button>
                       </td>
                     </tr>

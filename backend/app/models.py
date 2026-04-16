@@ -179,6 +179,7 @@ class Submission(db.Model):
     feedback = db.Column(db.Text, nullable=True)
     submitted_at = db.Column(db.DateTime(timezone=True), nullable=True)
     evaluated_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    auto_submitted = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = db.Column(
         db.DateTime(timezone=True),
