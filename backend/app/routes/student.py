@@ -4,10 +4,12 @@ from datetime import date, datetime, timezone
 
 from flask import Blueprint, g, jsonify, request
 
+from sqlalchemy.orm import joinedload
+
 from app.decorators import require_roles
 from app.errors import ApiError
 from app.extensions import db
-from app.models import Assignment, Submission
+from app.models import Assignment, Submission, SubmissionAttachment
 from app.services.assignment_helpers import (
     assignments_for_student,
     display_status,
@@ -17,6 +19,11 @@ from app.services.assignment_helpers import (
 )
 from app.services.dashboards import student_dashboard
 from app.services.notify import create_notification
+from app.services.submission_attachments import (
+    delete_submission_attachment_for_student,
+    save_upload_for_submission,
+    serialize_attachment,
+)
 
 student_bp = Blueprint("student", __name__)
 
@@ -50,7 +57,11 @@ def get_assignment(aid: int):
         raise ApiError("NOT_FOUND", "Assignment not found", 404)
     ensure_past_due_auto_submit(a, g.current_user.id)
     db.session.commit()
-    sub = Submission.query.filter_by(assignment_id=aid, student_id=g.current_user.id).first()
+    sub = (
+        Submission.query.options(joinedload(Submission.attachment_rows))
+        .filter_by(assignment_id=aid, student_id=g.current_user.id)
+        .first()
+    )
     row = serialize_student_assignment_row(a, sub)
     content = ""
     if sub:
@@ -62,6 +73,12 @@ def get_assignment(aid: int):
     row["content"] = content
     row["marks"] = sub.marks if sub else None
     row["feedback"] = sub.feedback if sub else None
+    row["attachments"] = (
+        [serialize_attachment(x) for x in sub.attachment_rows]
+        if sub
+        else []
+    )
+    row["submission_id"] = sub.id if sub else None
     return jsonify(row)
 
 
@@ -89,6 +106,49 @@ def save_draft(aid: int):
     return jsonify({"ok": True})
 
 
+@student_bp.post("/assignments/<int:aid>/attachments")
+@require_roles("Student")
+def upload_assignment_attachment(aid: int):
+    items = {a.id: a for a in assignments_for_student(g.current_user.batch_id)}
+    if aid not in items:
+        raise ApiError("NOT_FOUND", "Assignment not found", 404)
+    a = items[aid]
+    ensure_past_due_auto_submit(a, g.current_user.id)
+    db.session.commit()
+    if a.due_date < date.today():
+        raise ApiError("FORBIDDEN", "The due date has passed; this assignment is closed.", 403)
+    if "file" not in request.files or not request.files["file"] or not request.files["file"].filename:
+        raise ApiError("VALIDATION_ERROR", "file is required", 422)
+    sub = get_or_create_submission(aid, g.current_user.id)
+    att = save_upload_for_submission(assignment=a, submission=sub, file_storage=request.files["file"])
+    db.session.commit()
+    payload = serialize_attachment(att)
+    payload["submission_id"] = sub.id
+    return jsonify(payload), 201
+
+
+@student_bp.delete("/assignments/<int:aid>/attachments/<int:att_id>")
+@require_roles("Student")
+def delete_assignment_attachment(aid: int, att_id: int):
+    items = {a.id: a for a in assignments_for_student(g.current_user.batch_id)}
+    if aid not in items:
+        raise ApiError("NOT_FOUND", "Assignment not found", 404)
+    a = items[aid]
+    ensure_past_due_auto_submit(a, g.current_user.id)
+    db.session.commit()
+    if a.due_date < date.today():
+        raise ApiError("FORBIDDEN", "The due date has passed; this assignment is closed.", 403)
+    sub = Submission.query.filter_by(assignment_id=aid, student_id=g.current_user.id).first()
+    if not sub:
+        raise ApiError("NOT_FOUND", "Attachment not found", 404)
+    att = SubmissionAttachment.query.filter_by(id=att_id, submission_id=sub.id).first()
+    if not att:
+        raise ApiError("NOT_FOUND", "Attachment not found", 404)
+    delete_submission_attachment_for_student(assignment=a, submission=sub, att=att)
+    db.session.commit()
+    return "", 204
+
+
 @student_bp.post("/assignments/<int:aid>/submit")
 @require_roles("Student")
 def submit_assignment(aid: int):
@@ -102,11 +162,16 @@ def submit_assignment(aid: int):
         raise ApiError("FORBIDDEN", "The due date has passed; you cannot submit or edit this assignment.", 403)
     data = request.get_json(silent=True) or {}
     content = (data.get("content") or "").strip()
-    if not content:
-        raise ApiError("VALIDATION_ERROR", "content is required", 422)
+    sub = get_or_create_submission(aid, g.current_user.id)
+    has_files = SubmissionAttachment.query.filter_by(submission_id=sub.id).count() > 0
+    if not content and not (a.attachments_enabled and has_files):
+        raise ApiError(
+            "VALIDATION_ERROR",
+            "Enter a written submission or upload at least one file, as required by this assignment.",
+            422,
+        )
     if len(content) > 2 * 1024 * 1024:
         raise ApiError("VALIDATION_ERROR", "Content too large", 422)
-    sub = get_or_create_submission(aid, g.current_user.id)
     if sub.status in ("submitted", "evaluated"):
         raise ApiError("CONFLICT", "Already submitted", 409)
     sub.content = content

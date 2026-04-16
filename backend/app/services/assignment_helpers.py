@@ -123,4 +123,7 @@ def serialize_student_assignment_row(a: Assignment, sub: Submission | None) -> d
         "display_status": ds,
         "submission_status": sub.status if sub else None,
         "auto_submitted": bool(sub and getattr(sub, "auto_submitted", False)),
+        "attachments_enabled": bool(getattr(a, "attachments_enabled", False)),
+        "min_upload_bytes": a.min_upload_bytes,
+        "max_upload_bytes": a.max_upload_bytes,
     }

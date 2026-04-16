@@ -2,7 +2,13 @@ import { useCallback, useEffect, useState } from "react";
 import { Search, Eye, Edit, Check, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { ApiRequestError } from "../../services/api";
-import { evaluateSubmission, fetchStaffSubmissions } from "../../services/tracsigApi";
+import {
+  evaluateSubmission,
+  fetchStaffSubmissionDetail,
+  fetchStaffSubmissions,
+  type StaffSubmissionDetail,
+} from "../../services/tracsigApi";
+import { AttachmentInlinePreview } from "../submission/AttachmentInlinePreview";
 import { parseLocalYmd, startOfDay } from "../../utils/assignmentStatus";
 
 type SubmissionRow = {
@@ -15,6 +21,7 @@ type SubmissionRow = {
   evaluation_status: string;
   marks: number | null;
   content: string;
+  attachment_count?: number;
 };
 
 function canEvaluateAfterDue(dueYmd: string | null): boolean {
@@ -31,6 +38,8 @@ export const EvaluateAssignments = () => {
   const [feedback, setFeedback] = useState("");
   const [submissions, setSubmissions] = useState<SubmissionRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [submissionDetail, setSubmissionDetail] = useState<StaffSubmissionDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -49,6 +58,37 @@ export const EvaluateAssignments = () => {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (selectedSubmission === null) {
+      setSubmissionDetail(null);
+      setDetailLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setDetailLoading(true);
+    setSubmissionDetail(null);
+    void fetchStaffSubmissionDetail(selectedSubmission)
+      .then((d) => {
+        if (cancelled) return;
+        setSubmissionDetail(d);
+        if (d.marks != null) setMarks(String(d.marks));
+        else setMarks("");
+        setFeedback((d.feedback && String(d.feedback).trim()) || "");
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        if (e instanceof ApiRequestError) toast.error(e.message);
+        else toast.error("Could not load submission");
+        setSubmissionDetail(null);
+      })
+      .finally(() => {
+        if (!cancelled) setDetailLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedSubmission]);
 
   const filteredSubmissions = submissions.filter(
     (s) =>
@@ -74,6 +114,7 @@ export const EvaluateAssignments = () => {
       });
       toast.success("Assignment evaluated successfully!");
       setSelectedSubmission(null);
+      setSubmissionDetail(null);
       setMarks("");
       setFeedback("");
       await load();
@@ -156,7 +197,20 @@ export const EvaluateAssignments = () => {
                       <td className="px-6 py-4 text-foreground" style={{ fontWeight: 600 }}>
                         {submission.student_name}
                       </td>
-                      <td className="px-6 py-4 text-muted-foreground">{submission.assignment_title}</td>
+                      <td className="px-6 py-4 text-muted-foreground">
+                        <span className="inline-flex items-center gap-2">
+                          {submission.assignment_title}
+                          {(submission.attachment_count ?? 0) > 0 && (
+                            <span
+                              className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border"
+                              title="Has attachments"
+                            >
+                              {submission.attachment_count} file
+                              {(submission.attachment_count ?? 0) === 1 ? "" : "s"}
+                            </span>
+                          )}
+                        </span>
+                      </td>
                       <td className="px-6 py-4">
                         <span className="px-3 py-1 bg-primary/10 text-accent-primary rounded-full text-sm">
                           {submission.course_code}
@@ -190,15 +244,7 @@ export const EvaluateAssignments = () => {
                           </button>
                           {canEval ? (
                             <button
-                              onClick={() => {
-                                setSelectedSubmission(submission.id);
-                                if (submission.marks !== null && submission.marks !== undefined) {
-                                  setMarks(String(submission.marks));
-                                } else {
-                                  setMarks("");
-                                }
-                                setFeedback("");
-                              }}
+                              onClick={() => setSelectedSubmission(submission.id)}
                               className="p-2 hover:bg-muted rounded-lg transition-colors"
                               title={statusLabel === "evaluated" ? "Edit evaluation" : "Evaluate"}
                             >
@@ -239,6 +285,8 @@ export const EvaluateAssignments = () => {
               if (!submission) return null;
 
               const canEval = canEvaluateAfterDue(submission.due_date);
+              const bodyText = submissionDetail?.content ?? submission.content;
+              const attachments = submissionDetail?.attachments ?? [];
 
               return (
                 <>
@@ -252,10 +300,37 @@ export const EvaluateAssignments = () => {
                       </div>
                     </div>
 
+                    {detailLoading && (
+                      <p className="text-sm text-muted-foreground mb-4">Loading submission…</p>
+                    )}
+
                     <div className="bg-muted p-4 rounded-lg mb-6">
                       <h4 className="mb-2 text-foreground">Submission Content</h4>
-                      <p className="text-muted-foreground whitespace-pre-wrap">{submission.content}</p>
+                      <p className="text-muted-foreground whitespace-pre-wrap">{bodyText || "—"}</p>
                     </div>
+
+                    {attachments.length > 0 && (
+                      <div className="mb-6 space-y-2">
+                        <h4 className="text-foreground text-sm font-medium">Attachments</h4>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Expand a file to stream the preview in the app (no separate download step).
+                        </p>
+                        <div className="space-y-2 max-h-[min(50vh,420px)] overflow-y-auto pr-1">
+                          {attachments.map((att) => (
+                            <AttachmentInlinePreview
+                              key={att.id}
+                              submissionId={submission.id}
+                              attachment={{
+                                id: att.id,
+                                original_filename: att.original_filename,
+                                mime_type: att.mime_type,
+                                size_bytes: att.size_bytes,
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {canEval ? (
                       <div className="space-y-4">
@@ -306,6 +381,7 @@ export const EvaluateAssignments = () => {
                     <button
                       onClick={() => {
                         setSelectedSubmission(null);
+                        setSubmissionDetail(null);
                         setMarks("");
                         setFeedback("");
                       }}

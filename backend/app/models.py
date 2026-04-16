@@ -155,6 +155,9 @@ class Assignment(db.Model):
     course_id = db.Column(db.Integer, db.ForeignKey("courses.id", ondelete="CASCADE"), nullable=False, index=True)
     staff_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
     due_date = db.Column(db.Date, nullable=False, index=True)
+    attachments_enabled = db.Column(db.Boolean, nullable=False, default=False)
+    min_upload_bytes = db.Column(db.Integer, nullable=True)
+    max_upload_bytes = db.Column(db.Integer, nullable=True)
     created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = db.Column(
         db.DateTime(timezone=True),
@@ -189,12 +192,32 @@ class Submission(db.Model):
     )
 
     assignment = db.relationship("Assignment", back_populates="submissions")
+    attachment_rows = db.relationship(
+        "SubmissionAttachment",
+        back_populates="submission",
+        cascade="all, delete-orphan",
+        order_by="SubmissionAttachment.id",
+    )
 
     __table_args__ = (
         UniqueConstraint("assignment_id", "student_id", name="uq_submission_assignment_student"),
         CheckConstraint("status IN ('draft','submitted','evaluated')", name="ck_submission_status"),
         CheckConstraint("marks IS NULL OR (marks >= 0 AND marks <= 100)", name="ck_submission_marks"),
     )
+
+
+class SubmissionAttachment(db.Model):
+    __tablename__ = "submission_attachments"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    submission_id = db.Column(db.Integer, db.ForeignKey("submissions.id", ondelete="CASCADE"), nullable=False, index=True)
+    original_filename = db.Column(db.String(500), nullable=False)
+    stored_filename = db.Column(db.String(255), nullable=False)
+    mime_type = db.Column(db.String(255), nullable=False)
+    size_bytes = db.Column(db.Integer, nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    submission = db.relationship("Submission", back_populates="attachment_rows")
 
 
 class Notification(db.Model):

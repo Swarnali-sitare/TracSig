@@ -107,6 +107,30 @@ export async function submitStudentAssignment(assignmentId: number, content: str
   });
 }
 
+export type SubmissionAttachmentDto = {
+  id: number;
+  original_filename: string;
+  mime_type: string;
+  size_bytes: number;
+  created_at: string | null;
+  submission_id?: number;
+};
+
+export async function uploadStudentAssignmentAttachment(assignmentId: number, file: File) {
+  const fd = new FormData();
+  fd.set("file", file);
+  return apiRequest<SubmissionAttachmentDto>(`/api/student/assignments/${assignmentId}/attachments`, {
+    method: "POST",
+    body: fd,
+  });
+}
+
+export async function deleteStudentAssignmentAttachment(assignmentId: number, attachmentId: number) {
+  await apiRequest(`/api/student/assignments/${assignmentId}/attachments/${attachmentId}`, {
+    method: "DELETE",
+  });
+}
+
 // ——— Staff ———
 
 export async function fetchStaffDashboard() {
@@ -122,6 +146,9 @@ export async function createStaffAssignment(body: {
   description: string;
   course_id: number;
   due_date: string;
+  attachments_enabled?: boolean;
+  min_upload_bytes?: number | null;
+  max_upload_bytes?: number | null;
 }) {
   return apiRequest<{ id: number }>("/api/staff/assignments", {
     method: "POST",
@@ -131,6 +158,26 @@ export async function createStaffAssignment(body: {
 
 export async function fetchStaffSubmissions() {
   return apiRequest<{ items: unknown[] }>("/api/staff/submissions");
+}
+
+export type StaffSubmissionDetail = {
+  id: number;
+  assignment_id: number;
+  assignment_title: string;
+  course_code: string;
+  due_date: string;
+  student_id: number;
+  student_name: string;
+  submitted_on: string | null;
+  evaluation_status: string;
+  marks: number | null;
+  feedback: string | null;
+  content: string;
+  attachments: SubmissionAttachmentDto[];
+};
+
+export async function fetchStaffSubmissionDetail(submissionId: number) {
+  return apiRequest<StaffSubmissionDetail>(`/api/staff/submissions/${submissionId}`);
 }
 
 export async function evaluateSubmission(

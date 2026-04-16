@@ -107,6 +107,23 @@ def sync_database_schema() -> list[str]:
                 conn.execute(text("ALTER TABLE courses ADD COLUMN description TEXT"))
                 lines.append("Added courses.description")
 
+        if insp.has_table("assignments"):
+            acols = colset("assignments")
+            if "attachments_enabled" not in acols:
+                if dialect == "postgresql":
+                    conn.execute(
+                        text("ALTER TABLE assignments ADD COLUMN attachments_enabled BOOLEAN NOT NULL DEFAULT false")
+                    )
+                else:
+                    conn.execute(text("ALTER TABLE assignments ADD COLUMN attachments_enabled BOOLEAN NOT NULL DEFAULT 0"))
+                lines.append("Added assignments.attachments_enabled")
+            if "min_upload_bytes" not in acols:
+                conn.execute(text("ALTER TABLE assignments ADD COLUMN min_upload_bytes INTEGER"))
+                lines.append("Added assignments.min_upload_bytes")
+            if "max_upload_bytes" not in acols:
+                conn.execute(text("ALTER TABLE assignments ADD COLUMN max_upload_bytes INTEGER"))
+                lines.append("Added assignments.max_upload_bytes")
+
         if insp.has_table("submissions"):
             scols = colset("submissions")
             if "auto_submitted" not in scols:

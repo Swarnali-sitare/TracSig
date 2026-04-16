@@ -57,7 +57,8 @@ class BaseConfig:
         ).split(",")
         if o.strip()
     ]
-    MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH", str(2 * 1024 * 1024)))
+    # Default 55MB so assignment uploads up to 50MB fit under Flask's body limit.
+    MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH", str(55 * 1024 * 1024)))
 
     # Env-only admin login (no users table row). ADMIN_ACCOUNTS merges legacy + ADMIN_N_* vars.
     ADMIN_EMAIL = (os.environ.get("ADMIN_EMAIL") or "").strip().lower()

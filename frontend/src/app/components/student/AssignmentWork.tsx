@@ -16,10 +16,15 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { ApiRequestError } from "../../services/api";
 import {
+  deleteStudentAssignmentAttachment,
   fetchStudentAssignmentDetail,
   saveStudentDraft,
   submitStudentAssignment,
+  uploadStudentAssignmentAttachment,
+  type SubmissionAttachmentDto,
 } from "../../services/tracsigApi";
+import { AttachmentInlinePreview } from "../submission/AttachmentInlinePreview";
+import { formatBytes } from "../../utils/formatBytes";
 import type { StudentAssignmentRecord } from "../../types/studentAssignment";
 
 const AUTOSAVE_MS = 2000;
@@ -47,6 +52,12 @@ export const AssignmentWork = () => {
   const [marks, setMarks] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [autoSubmitted, setAutoSubmitted] = useState(false);
+  const [attachmentsEnabled, setAttachmentsEnabled] = useState(false);
+  const [minUploadBytes, setMinUploadBytes] = useState<number | null>(null);
+  const [maxUploadBytes, setMaxUploadBytes] = useState<number | null>(null);
+  const [submissionId, setSubmissionId] = useState<number | null>(null);
+  const [attachments, setAttachments] = useState<SubmissionAttachmentDto[]>([]);
+  const [uploadBusy, setUploadBusy] = useState(false);
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const serverDraftSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -76,6 +87,20 @@ export const AssignmentWork = () => {
         };
         setAssignment(row);
         setAutoSubmitted(Boolean(detail.auto_submitted));
+        setAttachmentsEnabled(Boolean(detail.attachments_enabled));
+        setMinUploadBytes(
+          typeof detail.min_upload_bytes === "number" ? detail.min_upload_bytes : null
+        );
+        setMaxUploadBytes(
+          typeof detail.max_upload_bytes === "number" ? detail.max_upload_bytes : null
+        );
+        const sid =
+          typeof detail.submission_id === "number"
+            ? detail.submission_id
+            : null;
+        setSubmissionId(sid);
+        const attRaw = detail.attachments;
+        setAttachments(Array.isArray(attRaw) ? (attRaw as SubmissionAttachmentDto[]) : []);
         const serverContent = typeof detail.content === "string" ? detail.content : "";
         if (!submitted && user?.id) {
           const local = loadAssignmentDraft(user.id, id);
@@ -145,6 +170,42 @@ export const AssignmentWork = () => {
     };
   }, [submissionText, draftHydrated, id, isSubmitted, canEdit]);
 
+  const handlePickFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files?.length || !id) return;
+    if (!attachmentsEnabled) return;
+    setUploadBusy(true);
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const res = await uploadStudentAssignmentAttachment(Number(id), file);
+        setAttachments((prev) => [...prev, res]);
+        if (typeof res.submission_id === "number") {
+          setSubmissionId(res.submission_id);
+        }
+      }
+      toast.success(files.length > 1 ? "Files uploaded" : "File uploaded");
+    } catch (err) {
+      if (err instanceof ApiRequestError) toast.error(err.message);
+      else toast.error("Upload failed");
+    } finally {
+      setUploadBusy(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleRemoveAttachment = async (attachmentId: number) => {
+    if (!id) return;
+    try {
+      await deleteStudentAssignmentAttachment(Number(id), attachmentId);
+      setAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
+      toast.success("File removed");
+    } catch (err) {
+      if (err instanceof ApiRequestError) toast.error(err.message);
+      else toast.error("Could not remove file");
+    }
+  };
+
   const handleSaveAsDraft = useCallback(async () => {
     if (!user?.id || !id) {
       toast.error("You must be signed in to save a draft.");
@@ -178,8 +239,15 @@ export const AssignmentWork = () => {
       toast.error("This assignment is closed.");
       return;
     }
-    if (!submissionText.trim()) {
-      toast.error("Please enter your submission");
+    const hasFiles = attachments.length > 0;
+    const textOk = submissionText.trim().length > 0;
+    const filesOk = attachmentsEnabled && hasFiles;
+    if (!textOk && !filesOk) {
+      toast.error(
+        attachmentsEnabled
+          ? "Enter your written work or upload at least one file"
+          : "Please enter your submission"
+      );
       return;
     }
     if (!id) return;
@@ -309,6 +377,26 @@ export const AssignmentWork = () => {
             <p className="text-muted-foreground py-4 border border-border rounded-lg px-4 bg-muted/50 whitespace-pre-wrap">
               {submissionText || "—"}
             </p>
+            {attachments.length > 0 && submissionId != null && (
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-foreground">Submitted files</h4>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Open a file to load the preview (downloads only happen if you use the browser&apos;s save action).
+                </p>
+                {attachments.map((att) => (
+                  <AttachmentInlinePreview
+                    key={att.id}
+                    submissionId={submissionId}
+                    attachment={{
+                      id: att.id,
+                      original_filename: att.original_filename,
+                      mime_type: att.mime_type,
+                      size_bytes: att.size_bytes,
+                    }}
+                  />
+                ))}
+              </div>
+            )}
             {(marks != null || feedback) && (
               <div className="rounded-lg border border-border bg-muted/50 p-4">
                 {marks != null && (
@@ -336,6 +424,49 @@ export const AssignmentWork = () => {
               placeholder="Write your submission here..."
               className="w-full h-96 px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors resize-none"
             />
+
+            {attachmentsEnabled && minUploadBytes != null && maxUploadBytes != null && (
+              <div className="mt-6 rounded-lg border border-border p-4 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-sm font-medium text-foreground">Attachments</h3>
+                  <span className="text-xs text-muted-foreground">
+                    Per file: {formatBytes(minUploadBytes)} – {formatBytes(maxUploadBytes)} · up to 20 files
+                  </span>
+                </div>
+                <label className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-muted hover:bg-hover-bg cursor-pointer text-sm text-foreground border border-border">
+                  <input
+                    type="file"
+                    multiple
+                    className="hidden"
+                    disabled={uploadBusy}
+                    onChange={handlePickFiles}
+                  />
+                  {uploadBusy ? "Uploading…" : "Add files"}
+                </label>
+                {attachments.length > 0 && (
+                  <ul className="space-y-2">
+                    {attachments.map((att) => (
+                      <li
+                        key={att.id}
+                        className="flex flex-wrap items-center justify-between gap-2 text-sm border border-border rounded-lg px-3 py-2 bg-muted/40"
+                      >
+                        <span className="truncate min-w-0" title={att.original_filename}>
+                          {att.original_filename}{" "}
+                          <span className="text-muted-foreground">({formatBytes(att.size_bytes)})</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => void handleRemoveAttachment(att.id)}
+                          className="text-error hover:underline shrink-0"
+                        >
+                          Remove
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
 
             <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
               <p className="text-sm text-muted-foreground">{submissionText.length} characters</p>

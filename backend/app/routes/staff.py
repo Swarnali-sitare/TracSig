@@ -4,11 +4,19 @@ from datetime import date, datetime, timedelta, timezone
 
 from flask import Blueprint, g, jsonify, request
 
+from sqlalchemy.orm import joinedload
+
 from app.decorators import require_roles
 from app.errors import ApiError
 from app.extensions import db
 from app.models import Assignment, Course, Enrollment, Submission, User
 from app.services.assignment_helpers import eligible_students_for_course, submitted_count_for_assignment
+from app.services.submission_attachments import (
+    cleanup_submission_upload_dir,
+    delete_attachment_files,
+    parse_attachment_settings,
+    serialize_attachment,
+)
 from app.services.dashboards import staff_dashboard
 from app.services.notify import create_notification
 
@@ -53,12 +61,16 @@ def create_assignment():
     course = db.session.get(Course, int(course_id))
     if not course or course.staff_id != g.current_user.id:
         raise ApiError("FORBIDDEN", "You can only create assignments for your own courses", 403)
+    att_en, min_b, max_b = parse_attachment_settings(data)
     a = Assignment(
         title=title,
         description=description,
         course_id=course.id,
         staff_id=g.current_user.id,
         due_date=due_date,
+        attachments_enabled=att_en,
+        min_upload_bytes=min_b,
+        max_upload_bytes=max_b,
     )
     db.session.add(a)
     db.session.flush()
@@ -111,6 +123,9 @@ def get_assignment(aid: int):
             "course_id": a.course_id,
             "course_code": a.course.code,
             "due_date": a.due_date.isoformat(),
+            "attachments_enabled": bool(a.attachments_enabled),
+            "min_upload_bytes": a.min_upload_bytes,
+            "max_upload_bytes": a.max_upload_bytes,
             "students": eligible_students_for_course(a.course_id),
             "submissions": submitted_count_for_assignment(a.id),
         }
@@ -142,6 +157,18 @@ def update_assignment(aid: int):
             a.due_date = date.fromisoformat(str(data["due_date"])[:10])
         except ValueError as e:
             raise ApiError("VALIDATION_ERROR", "Invalid due_date", 422) from e
+    if any(k in data for k in ("attachments_enabled", "min_upload_bytes", "max_upload_bytes")):
+        merged = {
+            "attachments_enabled": bool(data["attachments_enabled"])
+            if "attachments_enabled" in data
+            else bool(a.attachments_enabled),
+            "min_upload_bytes": data["min_upload_bytes"] if "min_upload_bytes" in data else a.min_upload_bytes,
+            "max_upload_bytes": data["max_upload_bytes"] if "max_upload_bytes" in data else a.max_upload_bytes,
+        }
+        att_en, min_b, max_b = parse_attachment_settings(merged)
+        a.attachments_enabled = att_en
+        a.min_upload_bytes = min_b
+        a.max_upload_bytes = max_b
     db.session.commit()
     return jsonify({"ok": True})
 
@@ -152,6 +179,15 @@ def delete_assignment(aid: int):
     a = Assignment.query.filter_by(id=aid, staff_id=g.current_user.id).first()
     if not a:
         raise ApiError("NOT_FOUND", "Assignment not found", 404)
+    subs = (
+        Submission.query.options(joinedload(Submission.attachment_rows))
+        .filter_by(assignment_id=a.id)
+        .all()
+    )
+    for sub in subs:
+        for att in list(sub.attachment_rows):
+            delete_attachment_files(att)
+        cleanup_submission_upload_dir(sub.id)
     db.session.delete(a)
     db.session.commit()
     return "", 204
@@ -164,7 +200,8 @@ def list_submissions():
     if not aids:
         return jsonify({"items": []})
     subs = (
-        Submission.query.filter(Submission.assignment_id.in_(aids), Submission.status != "draft")
+        Submission.query.options(joinedload(Submission.attachment_rows))
+        .filter(Submission.assignment_id.in_(aids), Submission.status != "draft")
         .order_by(Submission.submitted_at.desc().nulls_last())
         .all()
     )
@@ -183,9 +220,43 @@ def list_submissions():
                 "evaluation_status": "evaluated" if s.status == "evaluated" else "pending",
                 "marks": s.marks,
                 "content": (s.content or "")[:2000],
+                "attachment_count": len(s.attachment_rows),
             }
         )
     return jsonify({"items": items})
+
+
+@staff_bp.get("/submissions/<int:sid>")
+@require_roles("Staff")
+def get_submission_detail(sid: int):
+    s = (
+        Submission.query.options(joinedload(Submission.attachment_rows))
+        .filter_by(id=sid)
+        .first()
+    )
+    if not s or s.status == "draft":
+        raise ApiError("NOT_FOUND", "Submission not found", 404)
+    a = s.assignment
+    if not a or a.staff_id != g.current_user.id:
+        raise ApiError("FORBIDDEN", "Not your assignment", 403)
+    stu = db.session.get(User, s.student_id)
+    return jsonify(
+        {
+            "id": s.id,
+            "assignment_id": a.id,
+            "assignment_title": a.title,
+            "course_code": a.course.code if a.course else "",
+            "due_date": a.due_date.isoformat(),
+            "student_id": s.student_id,
+            "student_name": stu.full_name if stu else "",
+            "submitted_on": s.submitted_at.date().isoformat() if s.submitted_at else None,
+            "evaluation_status": "evaluated" if s.status == "evaluated" else "pending",
+            "marks": s.marks,
+            "feedback": s.feedback,
+            "content": s.content or "",
+            "attachments": [serialize_attachment(x) for x in s.attachment_rows],
+        }
+    )
 
 
 @staff_bp.post("/submissions/<int:sid>/evaluate")

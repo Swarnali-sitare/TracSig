@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { Send, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { ApiRequestError } from "../../services/api";
 import { createStaffAssignment, fetchStaffCourses } from "../../services/tracsigApi";
+import { bytesFromAmount, formatBytes } from "../../utils/formatBytes";
 import { HoverSelect } from "../ui/hover-select";
 
 export const GiveAssignment = () => {
@@ -13,6 +14,11 @@ export const GiveAssignment = () => {
     description: "",
     course: "",
     dueDate: "",
+    attachmentsEnabled: false,
+    minSize: 1,
+    minUnit: "KB" as "KB" | "MB",
+    maxSize: 10,
+    maxUnit: "MB" as "KB" | "MB",
   });
   const [courses, setCourses] = useState<{ id: number; code: string; name: string }[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
@@ -73,6 +79,24 @@ export const GiveAssignment = () => {
       return;
     }
 
+    const minBytes = bytesFromAmount(formData.minSize, formData.minUnit);
+    const maxBytes = bytesFromAmount(formData.maxSize, formData.maxUnit);
+    const cap50 = 50 * 1024 * 1024;
+    if (formData.attachmentsEnabled) {
+      if (minBytes < 1024) {
+        toast.error("Minimum file size must be at least 1 KB");
+        return;
+      }
+      if (maxBytes > cap50) {
+        toast.error("Maximum file size cannot exceed 50 MB");
+        return;
+      }
+      if (minBytes > maxBytes) {
+        toast.error("Minimum size cannot be greater than maximum size");
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     try {
       await createStaffAssignment({
@@ -80,6 +104,9 @@ export const GiveAssignment = () => {
         description: formData.description.trim(),
         course_id: Number(formData.course),
         due_date: formData.dueDate,
+        attachments_enabled: formData.attachmentsEnabled,
+        min_upload_bytes: formData.attachmentsEnabled ? minBytes : null,
+        max_upload_bytes: formData.attachmentsEnabled ? maxBytes : null,
       });
       toast.success("Assignment created successfully!");
       navigate("/faculty/dashboard");
@@ -161,6 +188,85 @@ export const GiveAssignment = () => {
                   min={new Date().toISOString().split("T")[0]}
                   className="w-full px-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
                 />
+              </div>
+
+              <div className="rounded-lg border border-border p-4 space-y-4">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.attachmentsEnabled}
+                    onChange={(e) =>
+                      setFormData((f) => ({ ...f, attachmentsEnabled: e.target.checked }))
+                    }
+                    className="mt-1 rounded border-border"
+                  />
+                  <span>
+                    <span className="text-foreground font-medium">Allow file uploads</span>
+                    <span className="block text-sm text-muted-foreground mt-1">
+                      Students can attach images, PDFs, documents, or videos (when enabled). Set per-file size limits
+                      between 1 KB and 50 MB.
+                    </span>
+                  </span>
+                </label>
+                {formData.attachmentsEnabled && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-0 sm:pl-8">
+                    <div>
+                      <span className="block text-sm text-foreground mb-2">Minimum file size</span>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          min={1}
+                          value={formData.minSize}
+                          onChange={(e) =>
+                            setFormData((f) => ({ ...f, minSize: Math.max(1, Number(e.target.value) || 1) }))
+                          }
+                          className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none"
+                        />
+                        <select
+                          value={formData.minUnit}
+                          onChange={(e) =>
+                            setFormData((f) => ({ ...f, minUnit: e.target.value as "KB" | "MB" }))
+                          }
+                          className="px-3 py-2 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none"
+                        >
+                          <option value="KB">KB</option>
+                          <option value="MB">MB</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <span className="block text-sm text-foreground mb-2">Maximum file size</span>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          min={1}
+                          value={formData.maxSize}
+                          onChange={(e) =>
+                            setFormData((f) => ({ ...f, maxSize: Math.max(1, Number(e.target.value) || 1) }))
+                          }
+                          className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none"
+                        />
+                        <select
+                          value={formData.maxUnit}
+                          onChange={(e) =>
+                            setFormData((f) => ({ ...f, maxUnit: e.target.value as "KB" | "MB" }))
+                          }
+                          className="px-3 py-2 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none"
+                        >
+                          <option value="KB">KB</option>
+                          <option value="MB">MB</option>
+                        </select>
+                      </div>
+                    </div>
+                    <p className="sm:col-span-2 text-xs text-muted-foreground">
+                      Allowed range for this assignment:{" "}
+                      <strong className="text-foreground">
+                        {formatBytes(bytesFromAmount(formData.minSize, formData.minUnit))} –{" "}
+                        {formatBytes(bytesFromAmount(formData.maxSize, formData.maxUnit))}
+                      </strong>
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

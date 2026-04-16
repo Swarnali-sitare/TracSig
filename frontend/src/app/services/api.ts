@@ -123,3 +123,33 @@ export async function apiRequest<T>(path: string, init?: ApiRequestOptions): Pro
 
   return JSON.parse(text) as T;
 }
+
+/** Authenticated GET returning raw bytes (for inline media preview). Uses same refresh-token flow as apiRequest. */
+export async function apiFetchBlob(path: string, init?: ApiRequestOptions): Promise<Blob> {
+  const { _retry, ...rest } = init || {};
+  const base = getApiBaseUrl();
+  const url = path.startsWith("http") ? path : `${base}${path}`;
+  const headers = new Headers(rest.headers);
+  const token = localStorage.getItem(ACCESS_KEY);
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  let res = await fetch(url, { ...rest, headers });
+
+  if (res.status === 401 && !_retry) {
+    const refreshed = await tryRefresh();
+    if (refreshed) {
+      headers.set("Authorization", `Bearer ${localStorage.getItem(ACCESS_KEY)}`);
+      res = await fetch(url, { ...rest, headers, _retry: true });
+    }
+  }
+
+  if (!res.ok) {
+    const text = await res.text();
+    const { message, code } = parseErrorBody(text, res.status);
+    throw new ApiRequestError(message, res.status, code);
+  }
+
+  return res.blob();
+}
