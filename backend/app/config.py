@@ -55,6 +55,9 @@ class BaseConfig:
     # Default 55MB; per-file limits in assignment settings stay under this.
     MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH", str(55 * 1024 * 1024)))
 
+    # After batch end_date + this many days, `flask purge-batch-submissions` may delete submissions.
+    BATCH_SUBMISSION_RETENTION_DAYS = int(os.environ.get("BATCH_SUBMISSION_RETENTION_DAYS", "30"))
+
     # ADMIN_ACCOUNTS: merged from legacy ADMIN_* and ADMIN_N_* env vars.
     ADMIN_EMAIL = (os.environ.get("ADMIN_EMAIL") or "").strip().lower()
     ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")

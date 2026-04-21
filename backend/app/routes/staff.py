@@ -208,10 +208,14 @@ def list_submissions():
     items = []
     for s in subs:
         stu = db.session.get(User, s.student_id)
+        if stu and stu.batch and stu.batch.end_date and stu.batch.end_date < date.today():
+            # Clean up visibility after batch end.
+            continue
         a = s.assignment
         items.append(
             {
                 "id": s.id,
+                "assignment_id": a.id if a else None,
                 "student_name": stu.full_name if stu else "",
                 "assignment_title": a.title if a else "",
                 "course_code": a.course.code if a and a.course else "",
@@ -240,6 +244,8 @@ def get_submission_detail(sid: int):
     if not a or a.staff_id != g.current_user.id:
         raise ApiError("FORBIDDEN", "Not your assignment", 403)
     stu = db.session.get(User, s.student_id)
+    if stu and stu.batch and stu.batch.end_date and stu.batch.end_date < date.today():
+        raise ApiError("NOT_FOUND", "Submission not found", 404)
     return jsonify(
         {
             "id": s.id,

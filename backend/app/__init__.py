@@ -177,4 +177,29 @@ def create_app(config_class: type | None = None) -> Flask:
         for line in sync_database_schema():
             click.echo(line)
 
+    @app.cli.command("purge-batch-submissions")
+    @click.option(
+        "--days",
+        type=int,
+        default=None,
+        help="Delete submissions for batches whose end_date is older than today minus this many days "
+        "(default: BATCH_SUBMISSION_RETENTION_DAYS from config, usually 30).",
+    )
+    @click.option("--dry-run", is_flag=True, help="Only count what would be deleted; no DB or file changes.")
+    def purge_batch_submissions(days: int | None, dry_run: bool):
+        """Remove assignment submissions (and files) for batches ended longer than the retention window."""
+        from app.services.batch_retention import purge_submissions_after_batch_retention
+
+        retention = days if days is not None else app.config.get("BATCH_SUBMISSION_RETENTION_DAYS", 30)
+        result = purge_submissions_after_batch_retention(retention_days=retention, dry_run=dry_run)
+        click.echo(f"Retention: {result['retention_days']} days (batches ended before {result['cutoff_batches_ended_before']})")
+        click.echo(f"Batches eligible: {result['batches_eligible']}")
+        click.echo(f"Submissions {'that would be deleted' if dry_run else 'deleted'}: {result['submissions_deleted']}")
+        if result["errors"]:
+            click.echo("Warnings/errors:")
+            for err in result["errors"][:50]:
+                click.echo(f"  - {err}")
+            if len(result["errors"]) > 50:
+                click.echo(f"  ... and {len(result['errors']) - 50} more")
+
     return app

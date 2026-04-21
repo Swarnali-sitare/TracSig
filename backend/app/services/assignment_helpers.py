@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from datetime import date, datetime, timezone
 
-from app.models import Assignment, Submission
+from app.extensions import db
+from app.models import Assignment, Batch, Submission
 
 
 def record_status(sub: Submission | None) -> str:
@@ -24,6 +25,11 @@ def display_status(due: date, sub: Submission | None) -> str:
 def student_course_ids(batch_id: int | None) -> list[int]:
     if not batch_id:
         return []
+    b = db.session.get(Batch, int(batch_id))
+    if b and b.end_date and b.end_date < date.today():
+        # Batch has ended: hide/clean assignment visibility to reduce clutter.
+        return []
+
     from app.models import Enrollment
 
     rows = Enrollment.query.filter_by(batch_id=batch_id).all()

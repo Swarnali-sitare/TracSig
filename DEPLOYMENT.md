@@ -105,6 +105,25 @@ gunicorn --bind 0.0.0.0:${PORT} --workers 2 --threads 2 wsgi:app
 
 Many hosts read `PORT` from the environment and expect a `Procfile` — this repo includes `backend/Procfile` you can adapt.
 
+### Scheduled cleanup: batch submission retention
+
+After a batch’s **`end_date`**, the app can hide old work from the UI; **30 days after that end date**, you should **purge** stored submissions (and uploaded files) so the database and disk stay lean.
+
+From `backend/`, with `FLASK_APP=wsgi:app` and the same `.env` as production:
+
+```bash
+flask purge-batch-submissions
+```
+
+- Default retention is **30 days** after `end_date` (override with `BATCH_SUBMISSION_RETENTION_DAYS` in `.env`, or `flask purge-batch-submissions --days 30`).
+- Use **`flask purge-batch-submissions --dry-run`** to see how many submissions would be removed without changing data.
+
+Run this **once per day** via **cron**, **systemd timer**, or your host’s scheduler (e.g. Railway cron, Render job). Example (daily at 03:00 server time):
+
+```bash
+0 3 * * * cd /path/to/TracSig/backend && . .venv/bin/activate && set -a && . ./.env && set +a && FLASK_APP=wsgi:app flask purge-batch-submissions
+```
+
 ---
 
 ## Front end: build for production
