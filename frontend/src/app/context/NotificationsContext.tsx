@@ -16,6 +16,7 @@ import {
   markNotificationRead,
   type NotificationDto,
 } from "../services/tracsigApi";
+import { useAuth } from "./AuthContext";
 
 export type NotificationIconKey = "bell" | "alert" | "check" | "info";
 
@@ -100,7 +101,10 @@ interface NotificationsContextValue {
 
 const NotificationsContext = createContext<NotificationsContextValue | null>(null);
 
+const STUDENT_NOTIFICATION_POLL_MS = 15 * 60 * 1000;
+
 export function NotificationsProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -119,6 +123,14 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void refetch();
   }, [refetch]);
+
+  useEffect(() => {
+    if (user?.role !== "student") return;
+    const id = window.setInterval(() => {
+      void refetch();
+    }, STUDENT_NOTIFICATION_POLL_MS);
+    return () => window.clearInterval(id);
+  }, [refetch, user?.role]);
 
   const markAsRead = useCallback((id: number) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, unread: false } : n)));

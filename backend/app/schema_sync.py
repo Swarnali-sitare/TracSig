@@ -133,6 +133,12 @@ def sync_database_schema() -> list[str]:
                     conn.execute(text("ALTER TABLE submissions ADD COLUMN auto_submitted BOOLEAN NOT NULL DEFAULT 0"))
                 lines.append("Added submissions.auto_submitted")
 
+        if insp.has_table("notifications"):
+            ncols = colset("notifications")
+            if "assignment_id" not in ncols:
+                conn.execute(text("ALTER TABLE notifications ADD COLUMN assignment_id INTEGER"))
+                lines.append("Added notifications.assignment_id")
+
         if insp.has_table("refresh_tokens"):
             rtcols = colset("refresh_tokens")
             if "principal_kind" not in rtcols:

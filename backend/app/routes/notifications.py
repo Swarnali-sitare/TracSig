@@ -6,6 +6,7 @@ from app.decorators import require_auth
 from app.errors import ApiError
 from app.extensions import db
 from app.models import Notification
+from app.services.due_soon_reminders import ensure_assignment_due_soon_notifications
 
 notifications_bp = Blueprint("notifications", __name__)
 
@@ -27,6 +28,9 @@ def _serialize(n: Notification) -> dict:
 def list_notifications():
     if getattr(g, "env_admin", False):
         return jsonify({"items": []})
+    if g.current_user and (g.current_user.role or "").strip() == "Student":
+        ensure_assignment_due_soon_notifications(g.current_user)
+        db.session.commit()
     unread_only = (request.args.get("unread_only") or "").lower() in ("1", "true", "yes")
     q = Notification.query.filter_by(user_id=g.current_user.id).order_by(Notification.created_at.desc())
     if unread_only:

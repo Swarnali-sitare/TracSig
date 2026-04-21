@@ -231,6 +231,7 @@ class Notification(db.Model):
     icon_key = db.Column(db.String(32), nullable=False, default="bell")
     is_read = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    assignment_id = db.Column(db.Integer, db.ForeignKey("assignments.id", ondelete="CASCADE"), nullable=True, index=True)
 
     __table_args__ = (
         CheckConstraint("icon_key IN ('bell','alert','check','info')", name="ck_notification_icon"),

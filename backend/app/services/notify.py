@@ -10,6 +10,7 @@ def create_notification(
     title: str,
     message: str,
     icon_key: str = "bell",
+    assignment_id: int | None = None,
 ) -> Notification:
     n = Notification(
         user_id=user_id,
@@ -17,6 +18,7 @@ def create_notification(
         title=title,
         message=message,
         icon_key=icon_key if icon_key in ("bell", "alert", "check", "info") else "bell",
+        assignment_id=assignment_id,
     )
     db.session.add(n)
     return n
