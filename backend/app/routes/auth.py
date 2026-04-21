@@ -28,7 +28,7 @@ def _env_admin_password_ok_account(acc: dict, password: str) -> bool:
 
 
 def _match_env_admin(email: str, password: str) -> str | None:
-    """Return canonical admin email (lowercase) if credentials match any ADMIN_ACCOUNTS entry."""
+    """Env admin email if password matches an ADMIN_ACCOUNTS entry, else None."""
     for acc in current_app.config.get("ADMIN_ACCOUNTS") or []:
         if acc.get("email") != email:
             continue

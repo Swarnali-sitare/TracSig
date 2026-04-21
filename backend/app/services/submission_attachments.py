@@ -12,7 +12,7 @@ from app.errors import ApiError
 from app.extensions import db
 from app.models import Assignment, Submission, SubmissionAttachment, User
 
-# Faculty-configurable max (bytes); global Flask MAX_CONTENT_LENGTH should be slightly higher.
+# Per-file cap; keep below Flask MAX_CONTENT_LENGTH.
 MAX_ASSIGNMENT_FILE_BYTES = 50 * 1024 * 1024
 MIN_ASSIGNMENT_FILE_BYTES = 1024  # 1 KB floor when uploads are enabled
 MAX_FILES_PER_SUBMISSION = 20
@@ -58,7 +58,7 @@ def attachment_path(submission_id: int, stored_filename: str) -> Path:
 
 
 def parse_attachment_settings(data: dict) -> tuple[bool, int | None, int | None]:
-    """Returns (attachments_enabled, min_upload_bytes, max_upload_bytes)."""
+    """(attachments_enabled, min_bytes, max_bytes)."""
     enabled = bool(data.get("attachments_enabled"))
     if not enabled:
         return False, None, None
@@ -116,7 +116,7 @@ def cleanup_submission_upload_dir(submission_id: int) -> None:
 
 
 def read_limited_file(storage: FileStorage, max_bytes: int) -> bytes:
-    """Read at most max_bytes + 1 to detect oversize without loading entire file into memory."""
+    """Stream read; reject if over max_bytes (avoids loading huge files)."""
     chunk_size = 1024 * 64
     out = bytearray()
     while True:

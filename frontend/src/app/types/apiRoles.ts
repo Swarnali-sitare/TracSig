@@ -1,6 +1,5 @@
 /**
- * Flask API (`/api/auth`) returns JWT roles `Student` | `Staff` | `Admin` (see `backend/app/auth_jwt.py`).
- * The SPA uses `student` | `faculty` | `admin` for routes and UI — map at the API boundary with these helpers.
+ * API sends Student | Staff | Admin; routes/UI use student | faculty | admin. Map here.
  */
 
 export type BackendUserRole = "Student" | "Staff" | "Admin";
@@ -16,7 +15,7 @@ export function toBackendRole(role: AppUserRole): BackendUserRole {
   return map[role];
 }
 
-/** Maps API / stored JWT role strings into app roles. Accepts legacy `Staff` as faculty if ever present. */
+/** JWT role → app role (Teacher/Staff → faculty). */
 export function fromBackendRole(role: string): AppUserRole {
   switch (role) {
     case "Student":
@@ -31,7 +30,7 @@ export function fromBackendRole(role: string): AppUserRole {
   }
 }
 
-/** Post-login / default app home (admin has no dashboard — use Student Data). */
+/** Default landing path; admin → student-data. */
 export function homePathForRole(role: AppUserRole): string {
   if (role === "admin") return "/admin/student-data";
   return `/${role}/dashboard`;

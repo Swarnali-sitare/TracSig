@@ -1,5 +1,7 @@
 # Assignment Tracker – Auth System Setup
 
+**Note:** This file describes an older Node/Express layout. For the current Flask API and Vite app, use [README.md](./README.md).
+
 ## 1. Folder tree
 
 ```
@@ -162,15 +164,6 @@ curl -X POST http://localhost:4000/api/auth/logout \
   -b cookies.txt
 ```
 
-## 6. Architecture decisions
+## 6. Architecture (historical)
 
-- **Frontend/backend split:** Clear separation; frontend only talks to backend via `/api` and fetch; no server-side rendering.
-- **Tokens:** Access token in memory (AuthContext); refresh token in httpOnly cookie set by backend. Reduces XSS impact and keeps refresh token off JS.
-- **Auth context:** Single place for user, role, accessToken, login, signup, logout, refresh. Protected routes and API calls use the same token source.
-- **Protected routes:** `ProtectedRoute` checks `accessToken`; if missing, redirects to `/login` and stores `from` for post-login redirect.
-- **Auto refresh:** On load, if there is no access token, the app calls `/auth/refresh` once (cookie sent with `credentials: 'include'`). When access token exists, a 14-minute interval calls refresh so a 15-minute access expiry is covered.
-- **API layer:** `authService` and `apiFetch` centralize base URL, `Authorization` header, and `credentials: 'include'` for cookies.
-- **Backend structure:** Routes → controllers → services → models/utils. Auth middleware verifies JWT and attaches payload to `req.user`; role middleware can restrict by role when needed.
-- **User store:** In-memory map for demo; replace with a DB (e.g. Prisma/TypeORM) and persistent sessions in production.
-- **Validation:** Signup validated on backend (name, email, password length, role enum); frontend does client-side validation for UX.
-- **Strict TypeScript:** No `any`; align types between frontend and backend. API `UserRole` is `Teacher` \| `Student` \| `Admin`; the SPA uses `faculty` → `Teacher` via `frontend/src/app/types/apiRoles.ts` at the HTTP boundary.
+This document assumed an Express auth API with an in-memory user store. **TracSig now uses Flask, PostgreSQL, and the layout in [README.md](./README.md).** Treat the sections above as reference only.

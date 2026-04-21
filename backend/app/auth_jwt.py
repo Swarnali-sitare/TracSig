@@ -53,7 +53,7 @@ def issue_tokens(user: User) -> tuple[str, str, int]:
 
 
 def issue_tokens_env_admin(env_admin_email: str) -> tuple[str, str, int]:
-    """JWT + refresh row for administrator authenticated via ADMIN_* env accounts (no DB row)."""
+    """Tokens for env-based admin (sub=env_admin; no User row)."""
     now = datetime.now(timezone.utc)
     access_exp = int(current_app.config["ACCESS_TOKEN_EXPIRES"])
     refresh_days = int(current_app.config["REFRESH_TOKEN_EXPIRES_DAYS"])

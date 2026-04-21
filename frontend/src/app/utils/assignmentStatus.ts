@@ -1,4 +1,4 @@
-/** Calendar-day comparison in local time (YYYY-MM-DD). */
+/** Local calendar day helpers (YYYY-MM-DD). */
 
 export function startOfDay(d: Date): Date {
   const x = new Date(d);
@@ -22,11 +22,7 @@ export type SubmissionRecordStatus = "pending" | "completed";
 
 export type StudentAssignmentDisplayStatus = "Pending" | "Completed" | "Incomplete";
 
-/**
- * Pending = not submitted, due date not passed.
- * Completed = submitted.
- * Incomplete = not submitted, due date passed.
- */
+/** Pending / Completed / Incomplete from due date + submission. */
 export function getStudentAssignmentDisplayStatus(assignment: {
   dueDate: string;
   status: SubmissionRecordStatus;
@@ -68,7 +64,7 @@ export function getDisplayStatusBadgeClass(status: StudentAssignmentDisplayStatu
   }
 }
 
-/** Aggregate counts using the same Pending / Completed / Incomplete rules as the list. */
+/** Counts by getStudentAssignmentDisplayStatus. */
 export function countAssignmentStats(
   assignments: { dueDate: string; status: SubmissionRecordStatus }[]
 ) {

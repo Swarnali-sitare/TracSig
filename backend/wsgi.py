@@ -1,7 +1,6 @@
 from pathlib import Path
 
-# Prefer project venv (`./venv/bin/flask`) so deps match requirements.txt. If `python-dotenv`
-# is missing (e.g. system Python), skip loading `.env` — set env vars in the shell instead.
+# Load backend/.env when python-dotenv is installed; otherwise export vars in the shell.
 try:
     from dotenv import load_dotenv
 

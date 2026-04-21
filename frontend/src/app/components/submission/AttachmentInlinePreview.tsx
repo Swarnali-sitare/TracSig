@@ -23,9 +23,7 @@ function previewKind(mime: string): "image" | "video" | "pdf" | "other" {
   return "other";
 }
 
-/**
- * Loads file bytes only after the user expands preview (reduces simultaneous large downloads).
- */
+/** Fetch blob only when the preview is expanded. */
 export function AttachmentInlinePreview({ submissionId, attachment }: Props) {
   const [open, setOpen] = useState(false);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);

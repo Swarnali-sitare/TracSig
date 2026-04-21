@@ -1,7 +1,4 @@
-/**
- * Persists in-progress assignment text per signed-in user and assignment.
- * Stored in localStorage (origin-scoped). Not a substitute for server-side storage in production.
- */
+/** Local draft text per user + assignment (localStorage; server draft is separate). */
 
 const PREFIX = "tracsig_assignment_draft_v1";
 
@@ -30,9 +27,7 @@ export function loadAssignmentDraft(userId: string, assignmentId: string | numbe
   return safeParse(localStorage.getItem(storageKey(userId, assignmentId)));
 }
 
-/**
- * Saves draft text. Trimming to empty removes the draft entry so storage stays minimal.
- */
+/** Save draft; empty string removes the key. */
 export function saveAssignmentDraft(userId: string, assignmentId: string | number, content: string): void {
   const key = storageKey(userId, assignmentId);
   try {
@@ -47,7 +42,7 @@ export function saveAssignmentDraft(userId: string, assignmentId: string | numbe
     };
     localStorage.setItem(key, JSON.stringify(payload));
   } catch {
-    // QuotaExceededError or private mode — caller may show a toast
+    // quota / private mode
   }
 }
 

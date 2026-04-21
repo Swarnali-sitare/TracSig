@@ -1,7 +1,7 @@
 import type { StudentAssignmentRecord } from "../types/studentAssignment";
 import type { SubmissionRecordStatus } from "./assignmentStatus";
 
-/** Maps `/api/student/assignments` list item to UI record shape. */
+/** Map API list row → StudentAssignmentRecord. */
 export function apiListRowToStudentAssignment(row: {
   id: number;
   title: string;

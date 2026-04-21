@@ -14,7 +14,7 @@ files_bp = Blueprint("files", __name__)
 @files_bp.get("/submissions/<int:sid>/attachments/<int:att_id>")
 @require_auth
 def serve_submission_attachment(sid: int, att_id: int):
-    """Stream file inline for preview (images, PDF, video); supports Range for video."""
+    """Inline file for preview; Range supported for video."""
     if getattr(g, "env_admin", False) or not g.current_user:
         raise ApiError("FORBIDDEN", "Not available for this session", 403)
 

@@ -52,7 +52,7 @@ def attach_error_handlers(app: Flask) -> None:
 
     @app.errorhandler(Exception)
     def handle_unexpected_error(err: Exception):
-        """Return JSON (not HTML) for unhandled errors under /api so the SPA can show a message."""
+        """For /api routes, return JSON instead of Flask’s HTML error page."""
         if isinstance(err, ApiError):
             return (
                 jsonify({"error": {"code": err.code, "message": err.message, "details": err.details}}),

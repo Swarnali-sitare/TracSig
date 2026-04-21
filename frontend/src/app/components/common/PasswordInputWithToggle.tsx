@@ -12,14 +12,14 @@ const INPUT_AUTH =
 
 export type PasswordInputWithToggleProps = {
   label: React.ReactNode;
-  /** Applied to the <label> element */
+  /** className for the label */
   labelClassName?: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder?: string;
   disabled?: boolean;
   id?: string;
-  /** `admin` — modals / admin forms; `adminPlain` — same padding, no transition on input; `auth` — login card */
+  /** admin: admin UI; adminPlain: no input transition; auth: login */
   variant?: "admin" | "adminPlain" | "auth";
   autoComplete?: string;
 };

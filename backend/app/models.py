@@ -24,7 +24,7 @@ class Batch(db.Model):
 
 
 class Student(db.Model):
-    """Managed student identity (admin). Shadow `User` rows link via `student_record_id` for LMS APIs."""
+    """Student record; login uses linked User (student_record_id)."""
 
     __tablename__ = "students"
 
@@ -39,7 +39,7 @@ class Student(db.Model):
 
 
 class Faculty(db.Model):
-    """Faculty identity for login. Shadow `User` rows (role Staff) link via `faculty_record_id`."""
+    """Faculty record; login uses linked User (faculty_record_id), role Staff."""
 
     __tablename__ = "faculty"
 
@@ -132,7 +132,7 @@ class Course(db.Model):
 
 
 class Enrollment(db.Model):
-    """Batch–course link: all students in the batch are enrolled in the course."""
+    """Batch enrolled in a course (all students in that batch)."""
 
     __tablename__ = "enrollments"
 

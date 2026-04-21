@@ -20,7 +20,7 @@ There is **no public registration**. Users cannot create their own accounts from
 | Role | How login works |
 |------|------------------|
 | **Admin** | One or more accounts from **environment** variables: legacy `ADMIN_EMAIL` / `ADMIN_PASSWORD` (or `ADMIN_PASSWORD_HASH`), and/or numbered `ADMIN_1_EMAIL` … `ADMIN_20_EMAIL` with matching `_PASSWORD` or `_PASSWORD_HASH`. No admin row is required in the database. |
-| **Student** | Email must exist in the **`students`** table and the password must match the stored hash. A linked shadow row in **`users`** is used for JWTs and LMS APIs. |
+| **Student** | Row in **`students`** with matching password hash; linked **`users`** row for JWT login. |
 | **Faculty** | Email must exist in the **`faculty`** table with a matching password hash, plus a linked shadow **`users`** row (`Staff`). |
 
 Login order on the server: env admin → student → faculty; otherwise **401** with **Invalid credentials**.
@@ -32,8 +32,6 @@ Add to `backend/.env` (see `backend/.env.example`). Example with multiple admins
 ```env
 ADMIN_1_EMAIL=admin1@example.com
 ADMIN_1_PASSWORD=your-secret
-ADMIN_2_EMAIL=admin2@example.com
-ADMIN_2_PASSWORD=other-secret
 ```
 
 You can still use a single **`ADMIN_EMAIL`** / **`ADMIN_PASSWORD`** (or **`ADMIN_PASSWORD_HASH`**) instead. For production, prefer strong passwords or per-slot **`ADMIN_N_PASSWORD_HASH`** from `werkzeug.security.generate_password_hash()`.

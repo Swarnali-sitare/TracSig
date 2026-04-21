@@ -9,11 +9,7 @@ type MergedCursorProps = SVGProps<SVGLineElement> & {
   payloadIndex?: number;
 };
 
-/**
- * Recharts {@link Tooltip} `cursor` for {@link BarChart} (default horizontal layout).
- * Receives the same rectangle geometry as the default bar-band cursor; draws a single
- * vertical guide at the category center so the default filled band is replaced.
- */
+/** BarChart tooltip cursor: vertical line at band center instead of the default fill. */
 export function RechartsBarHoverCursor(props: MergedCursorProps) {
   const { x = 0, y = 0, width = 0, height = 0, className } = props;
   if (width <= 0 || height <= 0) return null;

@@ -1,6 +1,6 @@
 # TracSig Backend API Requirements
 
-This document is derived from the TracSig React SPA (`frontend/`). The UI currently uses **mock data and `setTimeout` simulations**; there are no production API calls. It is intended for a **Python 3 / Flask / PostgreSQL** implementation. **JWT** access and refresh tokens are assumed unless otherwise noted.
+Backend API contract for the Vite/React app in `frontend/`. Calls go through `api.ts` and `tracsigApi.ts`. Stack: **Flask + PostgreSQL**, **JWT** access + refresh unless stated otherwise.
 
 **Frontend ↔ backend naming**
 
@@ -10,7 +10,7 @@ This document is derived from the TracSig React SPA (`frontend/`). The UI curren
 | `faculty`                    | `Staff`                   | `/api/staff`     |
 | `admin`                      | `Admin`                   | `/api/admin`     |
 
-The file `frontend/src/app/types/apiRoles.ts` maps `faculty` ↔ legacy `Teacher` / `Staff` in JWT payloads. New backends should standardize on **`Staff`** (not `Teacher`) in the database and JWT `role` claim, while accepting legacy `Teacher` during a transition period and normalizing in middleware.
+`frontend/src/app/types/apiRoles.ts` maps UI `faculty` to JWT `Staff` (and legacy `Teacher`). Prefer **`Staff`** in DB and JWT; accept `Teacher` in middleware if needed.
 
 ---
 

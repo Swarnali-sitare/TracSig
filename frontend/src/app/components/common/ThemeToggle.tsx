@@ -2,10 +2,7 @@ import { useEffect, useState, type ReactElement } from "react";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 
-/**
- * Moon = current light theme → click to enable dark mode.
- * Sun = current dark theme → click to enable light mode.
- */
+/** Theme switcher (light/dark) using next-themes. */
 export function ThemeToggle(): ReactElement {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);

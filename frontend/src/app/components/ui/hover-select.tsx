@@ -15,9 +15,7 @@ type HoverSelectProps = {
   options: HoverSelectOption[];
   placeholder?: string;
   disabled?: boolean;
-  /** Wrapper (e.g. width) */
   className?: string;
-  /** Merged into trigger button (e.g. pl-10 when icon sits beside) */
   triggerClassName?: string;
   id?: string;
 };

@@ -1,1 +1,1 @@
-# Dashboard and domain helpers
+# Service helpers

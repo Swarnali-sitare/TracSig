@@ -1,10 +1,10 @@
 /**
- * Typed wrappers for TracSig REST endpoints (see backend `app/routes/`).
+ * Typed calls to backend routes under /api (see backend app/routes).
  */
 
 import { apiRequest } from "./api";
 
-// ——— Auth ———
+// Auth
 
 export type AuthUserPublic = {
   id: number;
@@ -46,7 +46,7 @@ export async function fetchMe() {
   return apiRequest<AuthMe>("/api/auth/me");
 }
 
-// ——— Notifications ———
+// Notifications
 
 export type NotificationDto = {
   id: number;
@@ -79,7 +79,7 @@ export async function deleteAllNotifications() {
   await apiRequest("/api/notifications", { method: "DELETE" });
 }
 
-// ——— Student ———
+// Student
 
 export async function fetchStudentDashboard() {
   return apiRequest<Record<string, unknown>>("/api/student/dashboard");
@@ -131,7 +131,7 @@ export async function deleteStudentAssignmentAttachment(assignmentId: number, at
   });
 }
 
-// ——— Staff ———
+// Staff
 
 export async function fetchStaffDashboard() {
   return apiRequest<Record<string, unknown>>("/api/staff/dashboard");
@@ -197,7 +197,7 @@ export async function fetchStaffStudentProgress(course?: string) {
   );
 }
 
-// ——— Admin ———
+// Admin
 
 export async function fetchAdminStudents(params: { batch?: string; search?: string }) {
   const sp = new URLSearchParams();
@@ -320,7 +320,7 @@ export async function fetchAdminBatches() {
   return apiRequest<{ items: { id: number; name: string; year_label: string }[] }>("/api/admin/batches");
 }
 
-/** Admin batch & student management (dates + strength). */
+/** Batch list row with date range and student count. */
 export type AdminBatchSummary = {
   id: number;
   name: string;

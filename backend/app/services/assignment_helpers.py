@@ -38,10 +38,7 @@ def assignments_for_student(batch_id: int | None) -> list[Assignment]:
 
 
 def ensure_past_due_auto_submit(a: Assignment, student_id: int) -> Submission | None:
-    """
-    After due date: draft submissions become submitted as-is with auto_submitted=True.
-    No row => still None (Incomplete). Already submitted/evaluated => unchanged.
-    """
+    """Past due: promote draft to submitted with auto_submitted; else leave as-is."""
     from app.extensions import db
 
     if a.due_date >= date.today():

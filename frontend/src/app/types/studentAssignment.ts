@@ -1,6 +1,6 @@
 import type { SubmissionRecordStatus } from "../utils/assignmentStatus";
 
-/** Normalized row for student assignment list/detail UI (matches former mock shape). */
+/** Student assignment row for list/detail views. */
 export type StudentAssignmentRecord = {
   id: number;
   title: string;
@@ -9,6 +9,6 @@ export type StudentAssignmentRecord = {
   status: SubmissionRecordStatus;
   submittedOn?: string;
   description?: string;
-  /** Server: draft was auto-submitted when the due date passed. */
+  /** Draft auto-submitted after due date. */
   autoSubmitted?: boolean;
 };

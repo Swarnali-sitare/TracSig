@@ -3,7 +3,7 @@ import { fromBackendRole } from "../types/apiRoles";
 import { clearStoredTokens, getStoredRefreshToken, setStoredTokens } from "../services/api";
 import { fetchMe, loginRequest, logoutRequest, type AuthMe } from "../services/tracsigApi";
 
-/** App / URL role. Backend returns Student | Staff | Admin — map with `fromBackendRole`. */
+/** SPA role (fromBackendRole on API responses). */
 export type UserRole = "student" | "faculty" | "admin";
 
 export interface User {

@@ -4,24 +4,21 @@ import { AuthLayout } from "./components/layouts/AuthLayout";
 import { DashboardLayout } from "./components/layouts/DashboardLayout";
 import { Login } from "./components/auth/Login";
 
-// Student Pages
 import { StudentDashboard } from "./components/student/StudentDashboard";
 import { StudentAssignments } from "./components/student/StudentAssignments";
 import { AssignmentWork } from "./components/student/AssignmentWork";
-// Faculty Pages
 import { FacultyDashboard } from "./components/faculty/FacultyDashboard";
 import { GiveAssignment } from "./components/faculty/GiveAssignment";
 import { StudentProgress } from "./components/faculty/StudentProgress";
 import { EvaluateAssignments } from "./components/faculty/EvaluateAssignments";
 
-// Admin Pages
 import { StudentData } from "./components/admin/StudentData";
 import { BatchStudentRemovePage } from "./components/admin/BatchStudentRemovePage";
 import { FacultyManagement } from "./components/admin/FacultyManagement";
 import { CourseManagement } from "./components/admin/CourseManagement";
 import { EnrollmentsManagement } from "./components/admin/EnrollmentsManagement";
 
-/** Old `/staff/*` URLs → `/faculty/*` */
+/** Redirect /staff/* to /faculty/* */
 function RedirectStaffRoutesToFaculty() {
   const { pathname } = useLocation();
   const suffix = pathname.replace(/^\/staff/, "") || "/dashboard";

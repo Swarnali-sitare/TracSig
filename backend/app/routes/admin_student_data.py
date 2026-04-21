@@ -1,4 +1,4 @@
-"""Admin batch & student management (spec: /api/admin/batch, /api/admin/student)."""
+"""Admin routes for batches and managed students (/api/admin/batch, /api/admin/student)."""
 
 from __future__ import annotations
 
@@ -99,12 +99,11 @@ def admin_list_batches_with_strength():
 @admin_bp.delete("/batch/<int:batch_id>")
 @require_roles("Admin")
 def admin_delete_batch(batch_id: int):
-    """Remove batch and all managed students in it; revokes student login (students + shadow users)."""
+    """Delete batch, its students, and their User rows (delete Users first for FK checks)."""
     b = db.session.get(Batch, batch_id)
     if not b:
         raise ApiError("NOT_FOUND", "Batch not found", 404)
-    # Delete shadow Student users first. Deleting the Batch would SET NULL on users.batch_id via FK,
-    # which violates ck_student_batch (Student role requires batch_id NOT NULL) while the row still exists.
+    # Student users first: batch delete would null batch_id and break ck_student_batch.
     for u in User.query.filter_by(batch_id=batch_id, role="Student").all():
         db.session.delete(u)
     db.session.flush()

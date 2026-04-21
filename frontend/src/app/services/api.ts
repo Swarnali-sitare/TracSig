@@ -1,6 +1,6 @@
 /**
- * HTTP client for the Flask TracSig API. Uses Bearer JWT and refresh-token retry.
- * Base URL: `import.meta.env.VITE_API_URL` or http://127.0.0.1:5000
+ * Fetch helper for the Flask API: Bearer JWT, 401 → refresh → retry.
+ * Base URL: VITE_API_URL or http://127.0.0.1:5000
  */
 
 const ACCESS_KEY = "tracsig_access_token";
@@ -124,7 +124,7 @@ export async function apiRequest<T>(path: string, init?: ApiRequestOptions): Pro
   return JSON.parse(text) as T;
 }
 
-/** Authenticated GET returning raw bytes (for inline media preview). Uses same refresh-token flow as apiRequest. */
+/** Like apiRequest but returns a Blob (previews); same refresh retry. */
 export async function apiFetchBlob(path: string, init?: ApiRequestOptions): Promise<Blob> {
   const { _retry, ...rest } = init || {};
   const base = getApiBaseUrl();

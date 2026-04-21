@@ -165,4 +165,4 @@ The project currently uses `flask init-db` (`db.create_all()`). For production e
 - **Run API:** gunicorn + `wsgi:app`, with `TRUST_PROXY=1` behind a reverse proxy.
 - **Run SPA:** `npm run build` with `VITE_API_BASE_URL` set to your live API.
 
-If you tell me your target host (e.g. Railway, VPS + nginx, Azure), the exact commands and env layout can be narrowed further.
+For platform-specific steps (Railway, a VPS with nginx, Azure, etc.), follow that host’s documentation for process binding, TLS, and environment variables.

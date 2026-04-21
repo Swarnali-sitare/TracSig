@@ -1,4 +1,4 @@
-"""Bring an existing database in line with current SQLAlchemy models (tables + columns + PG checks)."""
+"""Migrate older DBs toward current models (tables, columns, PG checks)."""
 
 from __future__ import annotations
 
@@ -50,9 +50,7 @@ def _pg_user_faculty_fk(conn) -> None:
 
 
 def sync_database_schema() -> list[str]:
-    """
-    Safe to run multiple times. Returns human-readable log lines.
-    """
+    """Idempotent; returns log lines."""
     lines: list[str] = []
     engine = db.engine
     dialect = engine.dialect.name
@@ -62,7 +60,7 @@ def sync_database_schema() -> list[str]:
 
     insp = inspect(engine)
 
-    # Legacy: department removed from models; drop column if an old DB still has it.
+    # Drop legacy department column if present.
     legacy_department_tables = ("users", "faculty", "courses")
     with engine.begin() as conn:
         for table in legacy_department_tables:
@@ -181,7 +179,7 @@ def sync_database_schema() -> list[str]:
     elif dialect == "sqlite":
         lines.append("SQLite: for refresh token / FK changes, prefer a fresh DB (flask init-db) if issues persist.")
 
-    # Legacy batch_courses (composite PK) → enrollments (surrogate id + unique batch+course)
+    # Migrate batch_courses → enrollments then drop old table.
     insp_m = inspect(engine)
     if insp_m.has_table("batch_courses") and insp_m.has_table("enrollments"):
         with engine.begin() as conn:

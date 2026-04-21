@@ -27,7 +27,7 @@ def create_app(config_class: type | None = None) -> Flask:
 
     @app.get("/")
     def root():
-        """Avoid 404 when opening http://127.0.0.1:5000/ in a browser."""
+        """JSON index for GET / (health and /api entry points)."""
         return jsonify(
             {
                 "service": "TracSig API",
@@ -54,13 +54,13 @@ def create_app(config_class: type | None = None) -> Flask:
 
     @app.cli.command("init-db")
     def init_db():
-        """Create database tables (development)."""
+        """Create all tables (db.create_all)."""
         db.create_all()
         click.echo("Tables created.")
 
     @app.cli.command("seed-demo")
     def seed_demo():
-        """Insert minimal demo data: batches, faculty + shadow user, student + shadow user, course, assignment."""
+        """Seed demo faculty/student/course/assignment (see CLI output for credentials)."""
         from datetime import date, timedelta
 
         from werkzeug.security import generate_password_hash
@@ -152,7 +152,7 @@ def create_app(config_class: type | None = None) -> Flask:
 
     @app.cli.command("sync-db-checks")
     def sync_db_checks():
-        """PostgreSQL: recreate users.ck_users_role so Admin role is allowed on older DBs."""
+        """PostgreSQL only: fix users.ck_users_role to allow Admin."""
         from sqlalchemy import text
 
         url = str(db.engine.url)
@@ -171,7 +171,7 @@ def create_app(config_class: type | None = None) -> Flask:
 
     @app.cli.command("sync-schema")
     def sync_schema():
-        """Add missing tables/columns and PostgreSQL constraints (fixes 500s after model changes)."""
+        """Run schema_sync (new columns, FKs, legacy cleanup)."""
         from app.schema_sync import sync_database_schema
 
         for line in sync_database_schema():

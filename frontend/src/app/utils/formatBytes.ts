@@ -1,4 +1,4 @@
-/** Human-readable size for UI (KB / MB). */
+/** Format byte size for display. */
 export function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return "—";
   if (bytes < 1024) return `${bytes} B`;
