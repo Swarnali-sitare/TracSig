@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { useAuth } from "../../context/AuthContext";
 import { homePathForRole } from "../../types/apiRoles";
 import { Loader2 } from "lucide-react";
@@ -13,6 +13,7 @@ export const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +27,15 @@ export const Login = () => {
     try {
       const u = await login(email, password);
       toast.success("Login successful!");
-      navigate(homePathForRole(u.role));
+      const state = location.state as { from?: { pathname?: string; search?: string } } | undefined;
+      const from = state?.from;
+      const resume =
+        from?.pathname &&
+        from.pathname.startsWith("/") &&
+        !from.pathname.startsWith("/auth")
+          ? `${from.pathname}${from.search ?? ""}`
+          : null;
+      navigate(resume ?? homePathForRole(u.role), { replace: true });
     } catch (err) {
       if (err instanceof ApiRequestError) {
         toast.error(err.message);

@@ -1,12 +1,16 @@
-import { Outlet, Navigate } from "react-router";
+import { Outlet, Navigate, useLocation } from "react-router";
 import { useAuth } from "../../context/AuthContext";
 import { homePathForRole } from "../../types/apiRoles";
+import { AuthBootLoader } from "../common/AuthBootLoader";
 
 export const RootLayout = () => {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+  const location = useLocation();
 
-  // Redirect to appropriate dashboard or auth based on login status
-  if (window.location.pathname === "/") {
+  if (location.pathname === "/") {
+    if (isLoading) {
+      return <AuthBootLoader />;
+    }
     if (user) {
       return <Navigate to={homePathForRole(user.role)} replace />;
     }

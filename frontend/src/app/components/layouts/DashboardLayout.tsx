@@ -3,17 +3,22 @@ import { Outlet, Navigate, useLocation } from "react-router";
 import { useAuth } from "../../context/AuthContext";
 import { homePathForRole } from "../../types/apiRoles";
 import { NotificationsProvider } from "../../context/NotificationsContext";
+import { AuthBootLoader } from "../common/AuthBootLoader";
 import { Sidebar } from "../common/Sidebar";
 import { Header } from "../common/Header";
 
 export const DashboardLayout = () => {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  // Redirect to login if not authenticated
+  // Wait for session bootstrap — otherwise first paint has user=null and we wrongly send users to login.
+  if (isLoading) {
+    return <AuthBootLoader />;
+  }
+
   if (!user) {
-    return <Navigate to="/auth/login" replace />;
+    return <Navigate to="/auth/login" replace state={{ from: location }} />;
   }
 
   const path = location.pathname;

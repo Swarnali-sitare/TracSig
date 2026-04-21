@@ -1,10 +1,15 @@
 import { Outlet, Navigate } from "react-router";
 import { useAuth } from "../../context/AuthContext";
 import { homePathForRole } from "../../types/apiRoles";
+import { AuthBootLoader } from "../common/AuthBootLoader";
 import { ThemeToggle } from "../common/ThemeToggle";
 
 export const AuthLayout = () => {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <AuthBootLoader />;
+  }
 
   if (user) {
     return <Navigate to={homePathForRole(user.role)} replace />;
