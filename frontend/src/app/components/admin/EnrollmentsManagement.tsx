@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ApiRequestError } from "../../services/api";
@@ -150,23 +150,29 @@ export const EnrollmentsManagement = () => {
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
-            <label className="block mb-2 text-foreground text-sm">Batch</label>
+            <label className="mb-2 block pl-4 text-left text-sm text-foreground">
+              Batch
+            </label>
             <HoverSelect
               value={batchId}
               onChange={setBatchId}
               options={batchSelectOptions}
               placeholder="Select batch"
               disabled={submitting}
+              triggerClassName="border-border shadow-sm"
             />
           </div>
           <div>
-            <label className="block mb-2 text-foreground text-sm">Course</label>
+            <label className="mb-2 block pl-4 text-left text-sm text-foreground">
+              Course
+            </label>
             <HoverSelect
               value={courseId}
               onChange={setCourseId}
               options={courseSelectOptions}
               placeholder="Select course"
               disabled={submitting}
+              triggerClassName="border-border shadow-sm"
             />
           </div>
         </div>

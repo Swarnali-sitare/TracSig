@@ -136,26 +136,26 @@ export const StudentManagement = () => {
         </button>
       </div>
 
-      <div className="bg-card rounded-lg p-6 shadow-sm border border-border mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="bg-card rounded-lg border border-border px-3 py-2.5 shadow-sm mb-6">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:items-center">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             <input
               type="text"
               placeholder="Search students..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
+              className="w-full h-9 pl-9 pr-3 text-sm rounded-md bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
             />
           </div>
           <div className="relative">
-            <Filter className="absolute left-3 top-1/2 z-[1] -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
+            <Filter className="absolute left-2.5 top-1/2 z-[1] -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             <HoverSelect
               value={batchFilter}
               onChange={setBatchFilter}
               options={batchFilterOptions}
               placeholder="All Batches"
-              triggerClassName="pl-10"
+              triggerClassName="pl-9 h-9 min-h-9 py-2 px-3 text-sm"
             />
           </div>
         </div>

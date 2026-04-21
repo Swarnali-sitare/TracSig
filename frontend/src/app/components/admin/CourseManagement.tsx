@@ -181,15 +181,15 @@ export const CourseManagement = () => {
         </button>
       </div>
 
-      <div className="bg-card rounded-lg p-6 shadow-sm border border-border mb-6">
+      <div className="bg-card rounded-lg border border-border px-3 py-2.5 shadow-sm mb-6">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
           <input
             type="text"
             placeholder="Search courses..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
+            className="w-full h-9 pl-9 pr-3 text-sm rounded-md bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
           />
         </div>
       </div>

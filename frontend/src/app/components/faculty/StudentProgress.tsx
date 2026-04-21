@@ -104,16 +104,37 @@ export const StudentProgress = () => {
     <div className="max-w-7xl mx-auto">
       <h1 className="mb-6 text-foreground">Student Progress</h1>
 
-      <div className="bg-card rounded-lg p-6 shadow-sm border border-border mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mb-6">
+        <div className="bg-card rounded-lg p-4 shadow-sm border border-border">
+          <p className="text-muted-foreground mb-2 text-sm">Average Completion Rate</p>
+          <p className="text-3xl text-success" style={{ fontWeight: 700 }}>
+            {summary.average_completion_rate}%
+          </p>
+        </div>
+        <div className="bg-card rounded-lg p-4 shadow-sm border border-border">
+          <p className="text-muted-foreground mb-2 text-sm">Students Above 80%</p>
+          <p className="text-3xl text-accent-primary" style={{ fontWeight: 700 }}>
+            {summary.students_above_80_percent} / {summary.students_total || "—"}
+          </p>
+        </div>
+        <div className="bg-card rounded-lg p-4 shadow-sm border border-border">
+          <p className="text-muted-foreground mb-2 text-sm">Students Need Attention</p>
+          <p className="text-3xl text-error" style={{ fontWeight: 700 }}>
+            {summary.students_need_attention}
+          </p>
+        </div>
+      </div>
+
+      <div className="bg-card rounded-lg border border-border px-3 py-2.5 shadow-sm mb-6">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:items-center">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             <input
               type="text"
               placeholder="Search students..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
+              className="w-full h-9 pl-9 pr-3 text-sm rounded-md bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors"
             />
           </div>
           <HoverSelect
@@ -121,6 +142,7 @@ export const StudentProgress = () => {
             onChange={setCourseFilter}
             options={courseFilterOptions}
             placeholder="All Courses"
+            triggerClassName="h-9 min-h-9 py-2 px-3 text-sm"
           />
         </div>
       </div>
@@ -204,27 +226,6 @@ export const StudentProgress = () => {
               )}
             </tbody>
           </table>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-        <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
-          <p className="text-muted-foreground mb-2">Average Completion Rate</p>
-          <p className="text-3xl text-success" style={{ fontWeight: 700 }}>
-            {summary.average_completion_rate}%
-          </p>
-        </div>
-        <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
-          <p className="text-muted-foreground mb-2">Students Above 80%</p>
-          <p className="text-3xl text-accent-primary" style={{ fontWeight: 700 }}>
-            {summary.students_above_80_percent} / {summary.students_total || "—"}
-          </p>
-        </div>
-        <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
-          <p className="text-muted-foreground mb-2">Students Need Attention</p>
-          <p className="text-3xl text-error" style={{ fontWeight: 700 }}>
-            {summary.students_need_attention}
-          </p>
         </div>
       </div>
     </div>
