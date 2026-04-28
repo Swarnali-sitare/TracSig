@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { useAuth } from "../../context/AuthContext";
 import { homePathForRole } from "../../types/apiRoles";
@@ -90,12 +90,12 @@ export const Login = () => {
       </form>
 
       <div className="mt-8 rounded-lg border border-border bg-muted p-4">
-        <p className="mb-2 text-sm font-medium text-accent-primary">Local demo (after `flask seed-demo`):</p>
-        <ul className="space-y-1 text-xs text-muted-foreground">
+        <p className="mb-2 text-sm font-medium text-accent-primary">For registered students and faculty only. <br/> If unable to login, ask Admin for credentials. </p>
+        {/* <ul className="space-y-1 text-xs text-muted-foreground">
           <li>Student: student@example.com / student123</li>
           <li>Faculty: faculty@example.com / faculty123</li>
           <li>Admin: use ADMIN_EMAIL and ADMIN_PASSWORD from backend `.env` (not created by seed)</li>
-        </ul>
+        </ul> */}
       </div>
     </div>
   );

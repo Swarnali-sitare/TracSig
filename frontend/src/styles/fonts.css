@@ -1,2 +1,2 @@
-/* Inter (UI) + Merriweather (headings); Roboto/Helvetica/Arial/Georgia remain as stack fallbacks */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,500;0,700;1,400&display=swap');
+/* Work Sans — weights used for UI hierarchy (400 body, 500 UI/nav, 600 headings, 700 emphasis) */
+@import url('https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap');

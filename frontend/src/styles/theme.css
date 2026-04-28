@@ -28,10 +28,13 @@
   --card-bg: #ffffff;
 
   --font-size: 16px;
-  --font-family-sans: 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
-  --font-family-serif: 'Merriweather', 'Georgia', serif;
-  --font-weight-medium: 500;
+  --font-family-sans: 'Work Sans', sans-serif;
+  /* Align with sans so font-serif utilities stay consistent when used */
+  --font-family-serif: 'Work Sans', sans-serif;
   --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
 
   /* Bridge → shadcn / Tailwind semantic tokens */
   --background: var(--bg-primary);
@@ -197,7 +200,7 @@
   }
 
   html {
-    @apply font-sans;
+    @apply font-sans font-normal;
     font-size: var(--font-size);
     cursor: default;
     transition:
@@ -207,7 +210,7 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background font-normal text-foreground font-sans;
     cursor: default;
     transition:
       background-color 0.2s ease,
@@ -215,29 +218,26 @@
   }
 
   h1 {
-    @apply font-serif;
+    @apply font-sans font-semibold;
     font-size: var(--text-2xl);
-    font-weight: var(--font-weight-medium);
     line-height: 1.5;
   }
 
   h2 {
-    @apply font-serif;
+    @apply font-sans font-semibold;
     font-size: var(--text-xl);
-    font-weight: var(--font-weight-medium);
     line-height: 1.5;
   }
 
   h3 {
-    @apply font-serif;
+    @apply font-sans font-semibold;
     font-size: var(--text-lg);
-    font-weight: var(--font-weight-medium);
     line-height: 1.5;
   }
 
   h4 {
+    @apply font-sans font-semibold;
     font-size: var(--text-base);
-    font-weight: var(--font-weight-medium);
     line-height: 1.5;
   }
 
@@ -245,6 +245,19 @@
     font-size: var(--text-base);
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
+  }
+
+  nav {
+    font-weight: var(--font-weight-medium);
+  }
+
+  strong,
+  b {
+    font-weight: var(--font-weight-bold);
+  }
+
+  [data-slot="tooltip-content"] {
+    font-weight: var(--font-weight-normal);
   }
 
   [data-sonner-toaster],
