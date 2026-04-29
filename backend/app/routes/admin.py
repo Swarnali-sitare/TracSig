@@ -285,12 +285,11 @@ def delete_staff(uid: int):
         raise ApiError("NOT_FOUND", "Staff not found", 404)
     if Course.query.filter_by(staff_id=u.id).first():
         raise ApiError("CONFLICT", "Staff still assigned to courses", 409)
-    if u.faculty_record_id:
-        fac = db.session.get(Faculty, u.faculty_record_id)
-        if fac:
-            db.session.delete(fac)
-            db.session.commit()
-            return "", 204
+    # Clear FK, delete linked Faculty (if any), then delete Staff User in one transaction.
+    fac = db.session.get(Faculty, u.faculty_record_id) if u.faculty_record_id else None
+    u.faculty_record_id = None
+    if fac is not None:
+        db.session.delete(fac)
     db.session.delete(u)
     db.session.commit()
     return "", 204

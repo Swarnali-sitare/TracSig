@@ -11,6 +11,7 @@ import {
   type AdminEnrollmentRow,
 } from "../../services/tracsigApi";
 import { HoverSelect } from "../ui/hover-select";
+import { RequiredMark } from "../common/RequiredMark";
 
 type CourseOption = { id: number; code: string; name: string };
 
@@ -152,6 +153,7 @@ export const EnrollmentsManagement = () => {
           <div>
             <label className="mb-2 block pl-4 text-left text-sm text-foreground">
               Batch
+              <RequiredMark />
             </label>
             <HoverSelect
               value={batchId}
@@ -165,6 +167,7 @@ export const EnrollmentsManagement = () => {
           <div>
             <label className="mb-2 block pl-4 text-left text-sm text-foreground">
               Course
+              <RequiredMark />
             </label>
             <HoverSelect
               value={courseId}

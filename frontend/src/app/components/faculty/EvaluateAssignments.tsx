@@ -9,6 +9,7 @@ import {
   type StaffSubmissionDetail,
 } from "../../services/tracsigApi";
 import { AttachmentInlinePreview } from "../submission/AttachmentInlinePreview";
+import { RequiredMark } from "../common/RequiredMark";
 import { parseLocalYmd, startOfDay } from "../../utils/assignmentStatus";
 
 type SubmissionRow = {
@@ -396,7 +397,8 @@ export const EvaluateAssignments = () => {
                       <div className="space-y-4">
                         <div>
                           <label className="block mb-2 text-foreground">
-                            Marks (out of 100) <span className="text-error">*</span>
+                            Marks (out of 100)
+                            <RequiredMark />
                           </label>
                           <input
                             type="number"
@@ -411,7 +413,8 @@ export const EvaluateAssignments = () => {
 
                         <div>
                           <label className="block mb-2 text-foreground">
-                            Feedback <span className="text-error">*</span>
+                            Feedback
+                            <RequiredMark />
                           </label>
                           <textarea
                             value={feedback}

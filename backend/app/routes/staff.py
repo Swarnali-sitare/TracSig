@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timezone
 
 from flask import Blueprint, g, jsonify, request
 
@@ -317,9 +317,6 @@ def students_progress():
                 student_ids.add(u.id)
 
     items = []
-    now = date.today()
-    week_ago = now - timedelta(days=7)
-    prev_start = now - timedelta(days=14)
 
     for uid in student_ids:
         stu = db.session.get(User, uid)
@@ -330,8 +327,6 @@ def students_progress():
             total = len(assignments)
             submitted = 0
             last_act = None
-            recent = 0
-            prev = 0
             for a in assignments:
                 sub = Submission.query.filter_by(assignment_id=a.id, student_id=uid).first()
                 if sub and sub.status in ("submitted", "evaluated"):
@@ -340,14 +335,9 @@ def students_progress():
                         d = sub.submitted_at.date()
                         if last_act is None or d > last_act:
                             last_act = d
-                        if d >= week_ago:
-                            recent += 1
-                        if prev_start <= d < week_ago:
-                            prev += 1
             if total == 0:
                 continue
             rate = round(100.0 * submitted / total)
-            trend = "up" if recent >= prev else "down"
             batch_label = stu.batch.year_label if stu.batch else ""
             items.append(
                 {
@@ -359,7 +349,6 @@ def students_progress():
                     "total_assignments": total,
                     "completion_rate": rate,
                     "last_activity": last_act.isoformat() if last_act else "",
-                    "trend": trend,
                 }
             )
 

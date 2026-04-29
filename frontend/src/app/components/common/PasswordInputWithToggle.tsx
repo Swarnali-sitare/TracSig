@@ -1,5 +1,6 @@
 import { useId, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { RequiredMark } from "./RequiredMark";
 
 const INPUT_ADMIN =
   "w-full px-4 py-3 pr-9 rounded-lg bg-input-background border border-transparent focus:border-primary focus:outline-none transition-colors disabled:opacity-50";
@@ -22,6 +23,8 @@ export type PasswordInputWithToggleProps = {
   /** admin: admin UI; adminPlain: no input transition; auth: login */
   variant?: "admin" | "adminPlain" | "auth";
   autoComplete?: string;
+  /** When true, shows a required-field asterisk after the label. */
+  required?: boolean;
 };
 
 export function PasswordInputWithToggle({
@@ -34,6 +37,7 @@ export function PasswordInputWithToggle({
   id: idProp,
   variant = "admin",
   autoComplete,
+  required = false,
 }: PasswordInputWithToggleProps) {
   const uid = useId();
   const id = idProp ?? uid;
@@ -47,6 +51,7 @@ export function PasswordInputWithToggle({
     <div>
       <label htmlFor={id} className={labelClassName}>
         {label}
+        {required ? <RequiredMark /> : null}
       </label>
       <div className="relative">
         <input

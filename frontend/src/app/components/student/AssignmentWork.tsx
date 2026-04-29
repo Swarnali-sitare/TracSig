@@ -15,6 +15,7 @@ import {
 } from "../../utils/assignmentStatus";
 import { useAuth } from "../../context/AuthContext";
 import { ApiRequestError } from "../../services/api";
+import { RequiredMark } from "../common/RequiredMark";
 import {
   deleteStudentAssignmentAttachment,
   fetchStudentAssignmentDetail,
@@ -366,6 +367,14 @@ export const AssignmentWork = () => {
             </div>
           )}
         </div>
+        {!isSubmitted && canEdit && (
+          <p className="mb-3 text-xs text-muted-foreground">
+            <RequiredMark />{" "}
+            {attachmentsEnabled
+              ? "To submit, add written work and/or at least one attachment (as your instructor expects)."
+              : "Written work is required before you can submit."}
+          </p>
+        )}
 
         {isSubmitted ? (
           <div className="space-y-4">

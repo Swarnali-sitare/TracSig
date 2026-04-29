@@ -6,6 +6,7 @@ import { ApiRequestError } from "../../services/api";
 import { createStaffAssignment, fetchStaffCourses } from "../../services/tracsigApi";
 import { bytesFromAmount, formatBytes } from "../../utils/formatBytes";
 import { HoverSelect } from "../ui/hover-select";
+import { RequiredMark } from "../common/RequiredMark";
 
 export const GiveAssignment = () => {
   const navigate = useNavigate();
@@ -134,7 +135,8 @@ export const GiveAssignment = () => {
             <div className="space-y-6">
               <div>
                 <label htmlFor="title" className="block mb-2 text-foreground">
-                  Assignment Title <span className="text-error">*</span>
+                  Assignment Title
+                  <RequiredMark />
                 </label>
                 <input
                   id="title"
@@ -149,7 +151,8 @@ export const GiveAssignment = () => {
 
               <div>
                 <label htmlFor="course" className="block mb-2 text-foreground">
-                  Course <span className="text-error">*</span>
+                  Course
+                  <RequiredMark />
                 </label>
                 <HoverSelect
                   id="course"
@@ -162,7 +165,8 @@ export const GiveAssignment = () => {
 
               <div>
                 <label htmlFor="description" className="block mb-2 text-foreground">
-                  Description <span className="text-error">*</span>
+                  Description
+                  <RequiredMark />
                 </label>
                 <textarea
                   id="description"
@@ -177,7 +181,8 @@ export const GiveAssignment = () => {
 
               <div>
                 <label htmlFor="dueDate" className="block mb-2 text-foreground">
-                  Due Date <span className="text-error">*</span>
+                  Due Date
+                  <RequiredMark />
                 </label>
                 <input
                   id="dueDate"

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { MoreVertical, Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -26,6 +26,7 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { PasswordInputWithToggle } from "../common/PasswordInputWithToggle";
+import { RequiredMark } from "../common/RequiredMark";
 
 function formatDisplayDate(iso: string | null): string {
   if (!iso) return "—";
@@ -229,10 +230,10 @@ export const StudentData = () => {
                   Batch Name
                 </th>
                 <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
-                  Started On
+                  Start Date
                 </th>
                 <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
-                  Ends On
+                  End Date
                 </th>
                 <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
                   Strength
@@ -326,7 +327,10 @@ export const StudentData = () => {
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div>
-              <label className="block mb-2 text-sm text-foreground">Batch name</label>
+              <label className="block mb-2 text-sm text-foreground">
+                Batch name
+                <RequiredMark />
+              </label>
               <input
                 type="text"
                 value={createForm.name}
@@ -336,7 +340,10 @@ export const StudentData = () => {
               />
             </div>
             <div>
-              <label className="block mb-2 text-sm text-foreground">Start date</label>
+              <label className="block mb-2 text-sm text-foreground">
+                Start date
+                <RequiredMark />
+              </label>
               <input
                 type="date"
                 value={createForm.start_date}
@@ -345,7 +352,10 @@ export const StudentData = () => {
               />
             </div>
             <div>
-              <label className="block mb-2 text-sm text-foreground">End date</label>
+              <label className="block mb-2 text-sm text-foreground">
+                End date
+                <RequiredMark />
+              </label>
               <input
                 type="date"
                 value={createForm.end_date}
@@ -429,12 +439,18 @@ export const StudentData = () => {
             >
               Download template
             </button>
-            <input
-              type="file"
-              accept=".csv,text/csv"
-              onChange={(e) => setBulkFile(e.target.files?.[0] ?? null)}
-              className="w-full text-sm text-foreground"
-            />
+            <div className="rounded-lg border border-border bg-muted p-4">
+              <label className="mb-2 block text-sm text-foreground">
+                CSV file
+                <RequiredMark />
+              </label>
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                onChange={(e) => setBulkFile(e.target.files?.[0] ?? null)}
+                className="w-full text-sm text-foreground file:mr-3 file:rounded-md file:border file:border-border file:bg-background file:px-3 file:py-1.5 file:text-sm file:text-foreground file:transition-colors hover:file:bg-muted"
+              />
+            </div>
           </div>
           <DialogFooter>
             <button
@@ -502,7 +518,10 @@ export const StudentData = () => {
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div>
-              <label className="block mb-2 text-sm text-foreground">Student ID</label>
+              <label className="block mb-2 text-sm text-foreground">
+                Student ID
+                <RequiredMark />
+              </label>
               <input
                 type="text"
                 value={addForm.id}
@@ -511,7 +530,10 @@ export const StudentData = () => {
               />
             </div>
             <div>
-              <label className="block mb-2 text-sm text-foreground">Name</label>
+              <label className="block mb-2 text-sm text-foreground">
+                Name
+                <RequiredMark />
+              </label>
               <input
                 type="text"
                 value={addForm.name}
@@ -520,7 +542,10 @@ export const StudentData = () => {
               />
             </div>
             <div>
-              <label className="block mb-2 text-sm text-foreground">Email</label>
+              <label className="block mb-2 text-sm text-foreground">
+                Email
+                <RequiredMark />
+              </label>
               <input
                 type="email"
                 value={addForm.email}
@@ -533,6 +558,7 @@ export const StudentData = () => {
               label="Password"
               labelClassName="block mb-2 text-sm text-foreground"
               variant="adminPlain"
+              required
               value={addForm.password}
               onChange={(e) => setAddForm((f) => ({ ...f, password: e.target.value }))}
               autoComplete="new-password"

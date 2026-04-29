@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "../ui/dialog";
 import { PasswordInputWithToggle } from "../common/PasswordInputWithToggle";
+import { RequiredMark } from "../common/RequiredMark";
 
 type StaffRow = {
   id: number;
@@ -392,7 +393,10 @@ export const FacultyManagement = () => {
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block mb-2 text-foreground">Full Name</label>
+                <label className="block mb-2 text-foreground">
+                  Full Name
+                  <RequiredMark />
+                </label>
                 <input
                   type="text"
                   value={editForm.name}
@@ -404,7 +408,10 @@ export const FacultyManagement = () => {
                 />
               </div>
               <div>
-                <label className="block mb-2 text-foreground">Email</label>
+                <label className="block mb-2 text-foreground">
+                  Email
+                  <RequiredMark />
+                </label>
                 <input
                   type="email"
                   value={editForm.email}
@@ -474,7 +481,10 @@ export const FacultyManagement = () => {
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block mb-2 text-foreground">Full Name</label>
+                <label className="block mb-2 text-foreground">
+                  Full Name
+                  <RequiredMark />
+                </label>
                 <input
                   type="text"
                   value={form.name}
@@ -486,7 +496,10 @@ export const FacultyManagement = () => {
                 />
               </div>
               <div>
-                <label className="block mb-2 text-foreground">Email</label>
+                <label className="block mb-2 text-foreground">
+                  Email
+                  <RequiredMark />
+                </label>
                 <input
                   type="email"
                   value={form.email}
@@ -500,6 +513,7 @@ export const FacultyManagement = () => {
               <PasswordInputWithToggle
                 id="faculty-add-password"
                 label="Password"
+                required
                 value={form.password}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, password: e.target.value }))

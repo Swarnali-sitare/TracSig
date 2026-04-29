@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, TrendingUp, TrendingDown } from "lucide-react";
+import { Search } from "lucide-react";
 import { toast } from "sonner";
 import { ApiRequestError } from "../../services/api";
 import { fetchStaffCourses, fetchStaffStudentProgress } from "../../services/tracsigApi";
@@ -14,7 +14,6 @@ type ProgressRow = {
   total_assignments: number;
   completion_rate: number;
   last_activity: string;
-  trend: string;
 };
 
 export const StudentProgress = () => {
@@ -170,15 +169,12 @@ export const StudentProgress = () => {
                 <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
                   Last Activity
                 </th>
-                <th className="px-6 py-4 text-left text-foreground" style={{ fontWeight: 600 }}>
-                  Trend
-                </th>
               </tr>
             </thead>
             <tbody>
               {filteredStudents.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-muted-foreground">
+                  <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">
                     No progress data for this filter.
                   </td>
                 </tr>
@@ -214,13 +210,6 @@ export const StudentProgress = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-muted-foreground">{student.last_activity || "—"}</td>
-                    <td className="px-6 py-4">
-                      {student.trend === "up" ? (
-                        <TrendingUp className="w-5 h-5 text-success" />
-                      ) : (
-                        <TrendingDown className="w-5 h-5 text-error" />
-                      )}
-                    </td>
                   </tr>
                 ))
               )}

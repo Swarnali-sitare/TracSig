@@ -10,6 +10,14 @@ import {
   updateAdminCourse,
 } from "../../services/tracsigApi";
 import { HoverSelect } from "../ui/hover-select";
+import { RequiredMark } from "../common/RequiredMark";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../ui/dialog";
 
 type CourseRow = {
   id: number;
@@ -56,6 +64,13 @@ export const CourseManagement = () => {
   });
   const [editSubmitting, setEditSubmitting] = useState(false);
 
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: number;
+    code: string;
+    name: string;
+  } | null>(null);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -81,14 +96,19 @@ export const CourseManagement = () => {
       c.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleDeleteCourse = async (id: number) => {
+  const handleConfirmDeleteCourse = async () => {
+    if (deleteTarget == null) return;
+    setDeleteSubmitting(true);
     try {
-      await deleteAdminCourse(id);
+      await deleteAdminCourse(deleteTarget.id);
       toast.success("Course deleted successfully");
+      setDeleteTarget(null);
       await load();
     } catch (e) {
       if (e instanceof ApiRequestError) toast.error(e.message);
       else toast.error("Delete failed");
+    } finally {
+      setDeleteSubmitting(false);
     }
   };
 
@@ -248,15 +268,23 @@ export const CourseManagement = () => {
                         <button
                           type="button"
                           onClick={() => openEditCourse(course)}
-                          disabled={editSubmitting}
+                          disabled={editSubmitting || deleteSubmitting}
                           className="p-2 hover:bg-muted rounded-lg transition-colors disabled:opacity-50"
                           title="Edit course"
                         >
                           <Edit className="w-4 h-4 text-accent-primary" />
                         </button>
                         <button
-                          onClick={() => handleDeleteCourse(course.id)}
-                          className="p-2 hover:bg-error/10 rounded-lg transition-colors"
+                          type="button"
+                          onClick={() =>
+                            setDeleteTarget({
+                              id: course.id,
+                              code: course.code,
+                              name: course.name,
+                            })
+                          }
+                          disabled={deleteSubmitting}
+                          className="p-2 hover:bg-error/10 rounded-lg transition-colors disabled:opacity-50"
                           title="Delete course"
                         >
                           <Trash2 className="w-4 h-4 text-error" />
@@ -271,6 +299,47 @@ export const CourseManagement = () => {
         </div>
       </div>
 
+      <Dialog
+        open={deleteTarget != null}
+        onOpenChange={(o) => {
+          if (!o && !deleteSubmitting) setDeleteTarget(null);
+        }}
+      >
+        <DialogContent
+          className="sm:max-w-md"
+          onPointerDownOutside={(e) => deleteSubmitting && e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle>Delete course?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            This will permanently remove{" "}
+            <span className="font-medium text-foreground">{deleteTarget?.code}</span>
+            {" — "}
+            <span className="font-medium text-foreground">{deleteTarget?.name}</span>.
+            Related enrollments and data may be affected. This cannot be undone.
+          </p>
+          <DialogFooter>
+            <button
+              type="button"
+              disabled={deleteSubmitting}
+              onClick={() => setDeleteTarget(null)}
+              className="px-4 py-2 rounded-lg bg-muted text-foreground hover:bg-hover-bg disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={deleteSubmitting}
+              onClick={() => void handleConfirmDeleteCourse()}
+              className="px-4 py-2 rounded-lg bg-destructive text-destructive-foreground hover:opacity-90 disabled:opacity-50"
+            >
+              {deleteSubmitting ? "Deleting…" : "Delete course"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {editCourseId != null && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-card rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
@@ -279,7 +348,10 @@ export const CourseManagement = () => {
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block mb-2 text-foreground">Course Code</label>
+                <label className="block mb-2 text-foreground">
+                  Course Code
+                  <RequiredMark />
+                </label>
                 <input
                   type="text"
                   value={editForm.code}
@@ -289,7 +361,10 @@ export const CourseManagement = () => {
                 />
               </div>
               <div>
-                <label className="block mb-2 text-foreground">Course Name</label>
+                <label className="block mb-2 text-foreground">
+                  Course Name
+                  <RequiredMark />
+                </label>
                 <input
                   type="text"
                   value={editForm.name}
@@ -299,7 +374,10 @@ export const CourseManagement = () => {
                 />
               </div>
               <div>
-                <label className="block mb-2 text-foreground">Credits (1–6)</label>
+                <label className="block mb-2 text-foreground">
+                  Credits (1–6)
+                  <RequiredMark />
+                </label>
                 <input
                   type="number"
                   min="1"
@@ -311,7 +389,10 @@ export const CourseManagement = () => {
                 />
               </div>
               <div>
-                <label className="block mb-2 text-foreground">Instructor</label>
+                <label className="block mb-2 text-foreground">
+                  Instructor
+                  <RequiredMark />
+                </label>
                 <HoverSelect
                   value={editForm.staff_id}
                   onChange={(v) => setEditForm((f) => ({ ...f, staff_id: v }))}
@@ -351,7 +432,10 @@ export const CourseManagement = () => {
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block mb-2 text-foreground">Course Code</label>
+                <label className="block mb-2 text-foreground">
+                  Course Code
+                  <RequiredMark />
+                </label>
                 <input
                   type="text"
                   value={form.code}
@@ -361,7 +445,10 @@ export const CourseManagement = () => {
                 />
               </div>
               <div>
-                <label className="block mb-2 text-foreground">Course Name</label>
+                <label className="block mb-2 text-foreground">
+                  Course Name
+                  <RequiredMark />
+                </label>
                 <input
                   type="text"
                   value={form.name}
@@ -371,7 +458,10 @@ export const CourseManagement = () => {
                 />
               </div>
               <div>
-                <label className="block mb-2 text-foreground">Credits (1–6)</label>
+                <label className="block mb-2 text-foreground">
+                  Credits (1–6)
+                  <RequiredMark />
+                </label>
                 <input
                   type="number"
                   min="1"
@@ -382,7 +472,10 @@ export const CourseManagement = () => {
                 />
               </div>
               <div>
-                <label className="block mb-2 text-foreground">Instructor</label>
+                <label className="block mb-2 text-foreground">
+                  Instructor
+                  <RequiredMark />
+                </label>
                 <HoverSelect
                   value={form.staff_id}
                   onChange={(v) => setForm((f) => ({ ...f, staff_id: v }))}

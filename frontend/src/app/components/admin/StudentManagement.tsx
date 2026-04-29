@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Search, Filter, UserPlus, Edit, Trash2 } from "lucide-react";
 import { PasswordInputWithToggle } from "../common/PasswordInputWithToggle";
+import { RequiredMark } from "../common/RequiredMark";
 import { HoverSelect } from "../ui/hover-select";
 import { toast } from "sonner";
 import { ApiRequestError } from "../../services/api";
@@ -251,7 +252,10 @@ export const StudentManagement = () => {
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block mb-2 text-foreground">Full Name</label>
+                <label className="block mb-2 text-foreground">
+                  Full Name
+                  <RequiredMark />
+                </label>
                 <input
                   type="text"
                   value={form.name}
@@ -261,7 +265,10 @@ export const StudentManagement = () => {
                 />
               </div>
               <div>
-                <label className="block mb-2 text-foreground">Email</label>
+                <label className="block mb-2 text-foreground">
+                  Email
+                  <RequiredMark />
+                </label>
                 <input
                   type="email"
                   value={form.email}
@@ -273,12 +280,16 @@ export const StudentManagement = () => {
               <PasswordInputWithToggle
                 id="admin-student-password"
                 label="Password"
+                required
                 value={form.password}
                 onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
                 placeholder="Min 6 characters"
               />
               <div>
-                <label className="block mb-2 text-foreground">Batch</label>
+                <label className="block mb-2 text-foreground">
+                  Batch
+                  <RequiredMark />
+                </label>
                 <HoverSelect
                   value={form.batch_id}
                   onChange={(v) => setForm((f) => ({ ...f, batch_id: v }))}

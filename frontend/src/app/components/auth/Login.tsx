@@ -4,6 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import { homePathForRole } from "../../types/apiRoles";
 import { Loader2 } from "lucide-react";
 import { PasswordInputWithToggle } from "../common/PasswordInputWithToggle";
+import { RequiredMark } from "../common/RequiredMark";
 import { toast } from "sonner";
 import { ApiRequestError } from "../../services/api";
 
@@ -55,6 +56,7 @@ export const Login = () => {
         <div>
           <label htmlFor="email" className="mb-2 block text-foreground">
             Email
+            <RequiredMark />
           </label>
           <input
             id="email"
@@ -72,6 +74,7 @@ export const Login = () => {
           label="Password"
           labelClassName="mb-2 block text-foreground"
           variant="auth"
+          required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Enter your password"
